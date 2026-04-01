@@ -459,7 +459,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <input id="anulacionTicket" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" />
     </div>
     <div>
-      <label>N° de Orden de Compra (OC) <span style="color:#fa345e">*</span></label>
+      <label>N° de Factura <span style="color:#fa345e">*</span></label>
       <input id="anulacionOC" placeholder="Ej: OC-2025-001" required />
     </div>
   </div>
@@ -868,7 +868,7 @@ function validar() {
       showToast("Selecciona la sucursal de la anulación.", "error"); return false;
     }
     if (!document.getElementById("anulacionOC").value.trim()) {
-      showToast("Ingresa el N° de Orden de Compra.", "error"); return false;
+      showToast("Ingresa el N° de Factura.", "error"); return false;
     }
     if (!document.getElementById("anulacionMotivo").value.trim()) {
       showToast("Ingresa el motivo de la anulación.", "error"); return false;
