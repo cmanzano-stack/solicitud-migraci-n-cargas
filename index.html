@@ -455,12 +455,12 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
   <div class="inline-row" style="margin-top:16px;">
     <div>
-      <label>Total de Puntos a Reversar <span style="color:#fa345e">*</span></label>
-      <input id="anulacionTicket" type="number" min="1" placeholder="Ej: 330000" inputmode="numeric" />
+      <label>N° de Orden de Compra (OC) <span style="color:#fa345e">*</span></label>
+      <input id="anulacionOC" placeholder="Ej: OC-2025-001" required />
     </div>
     <div>
-      <label>N° de Factura <span style="color:#fa345e">*</span></label>
-      <input id="anulacionOC" placeholder="Ej: OC-2025-001" required />
+      <label>Total de Puntos a Reversar <span style="color:#fa345e">*</span></label>
+      <input id="anulacionPuntos" type="number" min="1" placeholder="Ej: 330000" required />
     </div>
   </div>
 
@@ -868,7 +868,11 @@ function validar() {
       showToast("Selecciona la sucursal de la anulación.", "error"); return false;
     }
     if (!document.getElementById("anulacionOC").value.trim()) {
-      showToast("Ingresa el N° de Factura.", "error"); return false;
+      showToast("Ingresa el N° de Orden de Compra.", "error"); return false;
+    }
+    const pts = Number(document.getElementById("anulacionPuntos").value);
+    if (!pts || pts <= 0) {
+      showToast("Ingresa el total de puntos a reversar.", "error"); return false;
     }
     if (!document.getElementById("anulacionMotivo").value.trim()) {
       showToast("Ingresa el motivo de la anulación.", "error"); return false;
@@ -960,10 +964,9 @@ function buildPayload() {
         id:     document.getElementById("sucursalAnulacion_id").value,
         nombre: document.getElementById("sucursalAnulacion_nombre").value
       },
-      nroOC:   document.getElementById("anulacionOC").value.trim(),
-      nroTicketAnulacion: document.getElementById("anulacionTicket").value.trim(),
+      nroOC:       document.getElementById("anulacionOC").value.trim(),
       totalPuntos: Number(document.getElementById("anulacionPuntos").value) || 0,
-      motivo:  document.getElementById("anulacionMotivo").value.trim()
+      motivo:      document.getElementById("anulacionMotivo").value.trim()
     };
   }
 }
@@ -1021,8 +1024,8 @@ function resetFormulario() {
   // Sección Anulación
   const anulOC = document.getElementById("anulacionOC");
   if (anulOC) anulOC.value = "";
-  const anulTicket = document.getElementById("anulacionTicket");
-  if (anulTicket) anulTicket.value = "";
+  const anulPuntos = document.getElementById("anulacionPuntos");
+  if (anulPuntos) anulPuntos.value = "";
   const anulMotivo = document.getElementById("anulacionMotivo");
   if (anulMotivo) anulMotivo.value = "";
   resetSelect("sucursalAnulacion","Selecciona empresa primero");
