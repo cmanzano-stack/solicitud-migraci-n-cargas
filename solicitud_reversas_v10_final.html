@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Solicitud Operaciones — Apprecio</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #f9f9f9;
+  padding: 40px 0;
+  margin: 0;
+}
+.container {
+  max-width: 650px;
+  background: #fff;
+  margin: auto;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.logo {
+  display: block;
+  margin: 0 auto 20px;
+  max-width: 180px;
+}
+h1 {
+  color: #fa345e;
+  text-align: center;
+  margin-bottom: 30px;
+}
+label {
+  display: block;
+  margin: 16px 0 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #fa345e;
+}
+select { background-color: #fef2f3; }
+input[readonly] { background: #f5f5f5; color: #666; }
+textarea { resize: vertical; min-height: 80px; }
+
+button {
+  background-color: #fa345e;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+button:hover { opacity: 0.9; }
+button:disabled { background: #ccc; cursor: not-allowed; }
+
+.gift-card-group {
+  border: 1px solid #eee;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  background: #fefefe;
+}
+.add-button { background-color: #f8848f; width: 100%; }
+.warning {
+  margin-top: 8px;
+  padding: 10px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  border-radius: 6px;
+  font-size: 13px;
+  display: none;
+}
+.comentario-warning {
+  margin-top: 8px;
+  padding: 10px;
+  background: #e8f4ff;
+  border: 1px solid #b6e0fe;
+  color: #084298;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.hidden { display: none !important; }
+.inline-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.inline-row > div { flex: 1; }
+.small-btn {
+  margin-top: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.hr { margin: 22px 0; border: none; border-top: 1px solid #eee; }
+
+/* Toggles — idéntico al HTML original */
+.top-options { display: flex; gap: 20px; margin-bottom: 30px; }
+.option-group { flex: 1; }
+.toggle-group { display: flex; gap: 10px; }
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #fa345e;
+  background: white;
+  color: #fa345e;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+.toggle-btn.active {
+  background: #fa345e !important;
+  color: white !important;
+  border: 1px solid #fa345e !important;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-family: 'Montserrat', sans-serif;
+}
+.delete-btn:hover { background-color: #b02a37; }
+
+/* Sección card con título */
+.section-block {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+.section-block-title {
+  background: #fa345e;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 16px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.section-block-body { padding: 16px 20px 20px; }
+
+/* Origen/Destino para reversar */
+.origen-card {
+  background: #fff5f7;
+  border: 1px solid #fdd;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 8px;
+}
+.destino-card {
+  background: #f0fff8;
+  border: 1px solid #b6f0d8;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 8px;
+}
+.mini-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+  margin-top: 0;
+}
+.origen-card .mini-section-label { color: #fa345e; }
+.destino-card .mini-section-label { color: #0a6640; }
+
+.transfer-arrow {
+  text-align: center;
+  font-size: 20px;
+  margin: 12px 0 4px;
+  color: #fa345e;
+}
+
+/* Toast */
+#toast {
+  display: none;
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  max-width: 340px;
+}
+#toast.success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+#toast.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* TomSelect overrides */
+.ts-wrapper .ts-control {
+  border: 1px solid #ccc !important;
+  border-radius: 8px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  background: #fef2f3 !important;
+  padding: 6px 10px !important;
+}
+.ts-wrapper.focus .ts-control { border-color: #fa345e !important; box-shadow: none !important; }
+
+.total-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  background: #fde8ed;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 14px;
+}
+.total-bar span:first-child { font-size: 13px; font-weight: 600; color: #555; }
+.total-bar span:last-child  { font-size: 17px; font-weight: 700; color: #fa345e; }
+
+.submit-btn { width: 100%; padding: 15px; font-size: 16px; margin-top: 28px; transition: background 0.3s, opacity 0.2s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<img src="https://estudios.apprecio.com/hubfs/logos/Apprecio-logo-rojo.png" class="logo" />
+<h1>Solicitud Operaciones Apprecio</h1>
+
+<!-- ══════════════════════════════════════
+     TIPO DE SOLICITUD (toggle estilo original)
+══════════════════════════════════════ -->
+<div class="top-options" style="margin-bottom:20px;">
+  <div class="option-group">
+    <label>Tipo de Solicitud</label>
+    <div class="toggle-group" id="tipoSolicitudToggle">
+      <button type="button" class="toggle-btn active" data-value="solicitud_gc">Solicitud de GC</button>
+      <button type="button" class="toggle-btn" data-value="migracion">Migración Puntos</button>
+      <button type="button" class="toggle-btn" data-value="anulacion">Anulación Cargas</button>
+    </div>
+    <input type="hidden" id="tipoSolicitudHidden" value="solicitud_gc">
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     DATOS DE LA EMPRESA
+══════════════════════════════════════ -->
+<label>País</label>
+<select id="pais" required>
+  <option value="">Selecciona</option>
+  <option>Chile</option>
+  <option>Colombia</option>
+  <option>Ecuador</option>
+  <option>Peru</option>
+  <option>Mexico</option>
+</select>
+
+<label>Panel / Empresa</label>
+<select id="panelEmpresa">
+  <option value="">Selecciona empresa</option>
+</select>
+<input type="hidden" id="idPanelHidden">
+
+<label>Razón Social</label>
+<input id="razonSocial" readonly />
+
+<label>RUT / ID Tributario</label>
+<input id="rutEmpresa" readonly />
+
+<!-- ══════════════════════════════════════
+     DATOS DEL SOLICITANTE
+══════════════════════════════════════ -->
+<hr class="hr">
+
+<div class="inline-row">
+  <div>
+    <label>Correo del Solicitante (Cliente)</label>
+    <input id="solEmail" type="email" placeholder="cliente@empresa.cl" required />
+  </div>
+  <div>
+    <label>Correo KAM Solicitante</label>
+    <input id="kamEmail" type="email" placeholder="kam@apprecio.com" required />
+  </div>
+</div>
+
+<div class="inline-row">
+  <div>
+    <label>Nombre del Solicitante</label>
+    <input id="solNombre" placeholder="Tu nombre completo" required />
+  </div>
+  <div>
+    <label>Área / Cargo</label>
+    <input id="solArea" placeholder="Ej: RRHH" />
+  </div>
+</div>
+
+<label>N° de Ticket</label>
+<input id="nroTicket" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" />
+
+<hr class="hr">
+
+<!-- ══════════════════════════════════════
+     ① SECCIÓN: SOLICITUD DE GC
+══════════════════════════════════════ -->
+<div id="seccion-solicitud_gc">
+
+  <!-- Tipo GC + GC Física (igual al HTML original) -->
+  <div class="top-options">
+    <div class="option-group">
+      <label>Tipo de Gift Card</label>
+      <select id="tipoGiftCard" required>
+        <option value="">Selecciona</option>
+        <option value="PDF">Gift card PDF</option>
+        <option value="Delivery">Gift card Delivery</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label>Gift Card Física</label>
+      <select id="giftCardFisica">
+        <option value="No" selected>No</option>
+        <option value="Si">Si</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Sucursal origen de puntos -->
+  <label>Sucursal (origen de los puntos)</label>
+  <select id="sucursalGC" required>
+    <option value="">Selecciona empresa primero</option>
+  </select>
+  <input type="hidden" id="sucursalGC_id">
+  <input type="hidden" id="sucursalGC_nombre">
+
+  <label>Comentarios</label>
+  <textarea id="gcComentarios" placeholder="Información adicional..."></textarea>
+
+  <hr class="hr">
+
+  <!-- Bloques de Gift Cards (idéntico al original) -->
+  <div id="giftCardFields"></div>
+
+  <button type="button" class="add-button" onclick="addGiftCardGroup()">
+    ➕ Agregar Gift Card
+  </button>
+
+  <div class="total-bar" id="totalBar" style="display:none;">
+    <span>Total puntos a descontar:</span>
+    <span id="gcTotalPuntos">0</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ② SECCIÓN: MIGRACIÓN DE PUNTOS
+══════════════════════════════════════ -->
+<div id="seccion-migracion" class="hidden">
+
+  <!-- ORIGEN — siempre es la empresa seleccionada arriba -->
+  <div class="section-block">
+    <div class="section-block-title">Origen — Empresa seleccionada arriba</div>
+    <div class="section-block-body">
+      <label style="margin-top:0;">Sucursal origen <span style="color:#fa345e">*</span></label>
+      <select id="sucursalOrigen" required>
+        <option value="">Selecciona empresa primero</option>
+      </select>
+      <input type="hidden" id="sucursalOrigen_id">
+      <input type="hidden" id="sucursalOrigen_nombre">
+    </div>
+  </div>
+
+  <div class="transfer-arrow">▼</div>
+
+  <!-- DESTINO — misma o distinta empresa -->
+  <div class="section-block">
+    <div class="section-block-title" style="background:#0a6640;">Destino — ¿A dónde van los puntos?</div>
+    <div class="section-block-body">
+
+      <label style="margin-top:0;">¿El destino es la misma empresa?</label>
+      <div class="toggle-group" id="mismaEmpresaToggle">
+        <button type="button" id="btnMismaEmpresa" class="toggle-btn active" data-value="si">Sí, misma empresa</button>
+        <button type="button" id="btnOtraEmpresa"  class="toggle-btn" data-value="no">No, otra empresa</button>
+      </div>
+      <input type="hidden" id="mismaEmpresaHidden" value="si">
+
+      <!-- Bloque otra empresa destino -->
+      <div id="bloqueOtraEmpresaOrigen" class="hidden" style="margin-top:14px;">
+        <label>País empresa destino</label>
+        <select id="paisOrigen">
+          <option value="">Selecciona</option>
+          <option>Chile</option><option>Colombia</option>
+          <option>Ecuador</option><option>Peru</option><option>Mexico</option>
+        </select>
+        <label>Panel empresa destino</label>
+        <select id="panelOrigen" disabled>
+          <option value="">Selecciona país primero</option>
+        </select>
+        <input type="hidden" id="idPanelOrigenHidden">
+        <label>Razón Social destino</label>
+        <input id="razonOrigenInput" readonly />
+      </div>
+
+      <label>Sucursal destino <span style="color:#fa345e">*</span></label>
+      <select id="sucursalDestino" required>
+        <option value="">Selecciona empresa primero</option>
+      </select>
+      <input type="hidden" id="sucursalDestino_id">
+      <input type="hidden" id="sucursalDestino_nombre">
+    </div>
+  </div>
+
+  <label>Total de Puntos a Migrar <span style="color:#fa345e">*</span></label>
+  <input id="reversarPuntos" type="number" min="1" placeholder="Ej: 330000" required />
+
+  <label>Motivo de la Migración <span style="color:#fa345e">*</span></label>
+  <textarea id="reversarMotivo" placeholder="Explica el motivo de la migración..."></textarea>
+</div>
+
+<!-- ══════════════════════════════════════
+     ③ SECCIÓN: ANULACIÓN DE CARGAS
+══════════════════════════════════════ -->
+<div id="seccion-anulacion" class="hidden">
+
+  <div class="section-block">
+    <div class="section-block-title">Origen — Sucursal a anular</div>
+    <div class="section-block-body">
+      <label style="margin-top:0;">Sucursal <span style="color:#fa345e">*</span></label>
+      <select id="sucursalAnulacion" required>
+        <option value="">Selecciona empresa primero</option>
+      </select>
+      <input type="hidden" id="sucursalAnulacion_id">
+      <input type="hidden" id="sucursalAnulacion_nombre">
+    </div>
+  </div>
+
+  <div class="inline-row" style="margin-top:16px;">
+    <div>
+      <label>N° de Ticket <span style="color:#fa345e">*</span></label>
+      <input id="anulacionTicket" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" />
+    </div>
+    <div>
+      <label>N° de Orden de Compra (OC) <span style="color:#fa345e">*</span></label>
+      <input id="anulacionOC" placeholder="Ej: OC-2025-001" required />
+    </div>
+  </div>
+
+  <label>Motivo / Comentario <span style="color:#fa345e">*</span></label>
+  <textarea id="anulacionMotivo" placeholder="Explica el motivo de la anulación..."></textarea>
+</div>
+
+<!-- SUBMIT -->
+<button type="button" class="submit-btn" id="submitBtn" onclick="enviarSolicitud()">
+  📨 Enviar Solicitud
+</button>
+
+</div><!-- /container -->
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   CONSTANTES
+══════════════════════════════════════ */
+const API_URL_STOCK    = "https://n8n.openip.cl/webhook/gc-stock";
+const API_URL_EMPRESAS = "https://n8n.openip.cl/webhook/empresas";
+const WEBHOOK_REVERSAS = "https://n8n.openip.cl/webhook/solicitud-reversas"; // ← reemplazar con tu URL
+
+let empresasCache  = {};
+let panelTS        = null;
+let panelOrigenTS  = null;
+let empresasOrigen = [];
+
+/* ══════════════════════════════════════
+   TOGGLE TIPO SOLICITUD
+══════════════════════════════════════ */
+activarToggle("tipoSolicitudToggle", "tipoSolicitudHidden", (val) => {
+  document.getElementById("seccion-solicitud_gc").classList.toggle("hidden", val !== "solicitud_gc");
+  document.getElementById("seccion-migracion").classList.toggle("hidden",   val !== "migracion");
+  document.getElementById("seccion-anulacion").classList.toggle("hidden",   val !== "anulacion");
+  // Limpiar sucursales y GC al cambiar sección
+  resetSelect("sucursalGC",       "Selecciona empresa primero");
+  resetSelect("sucursalOrigen",   "Selecciona empresa primero");
+  resetSelect("sucursalDestino",  "Selecciona empresa primero");
+  resetSelect("sucursalAnulacion","Selecciona empresa primero");
+  ["sucursalGC_id","sucursalGC_nombre",
+   "sucursalOrigen_id","sucursalOrigen_nombre",
+   "sucursalDestino_id","sucursalDestino_nombre",
+   "sucursalAnulacion_id","sucursalAnulacion_nombre"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+  document.getElementById("giftCardFields").innerHTML = "";
+  updateTotalBar();
+});
+
+activarToggle("mismaEmpresaToggle", "mismaEmpresaHidden", (val) => {
+  const bloqueOtra = document.getElementById("bloqueOtraEmpresaOrigen");
+  bloqueOtra.classList.toggle("hidden", val === "si");
+  if (val === "si") {
+    // Destino = misma empresa principal → poblar sus sucursales
+    const pais = document.getElementById("pais").value;
+    const lista = empresasCache[pais] || [];
+    const nombreEmpresa = panelTS ? panelTS.getValue() : "";
+    const emp = lista.find(e => e.nombreEmpresa === nombreEmpresa);
+    if (emp) {
+      poblarSucursales(emp.sucursales || [], "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+    } else {
+      resetSelect("sucursalDestino", "Selecciona empresa primero");
+    }
+  } else {
+    resetSelect("sucursalDestino", "Selecciona empresa destino primero");
+    document.getElementById("sucursalDestino_id").value = "";
+    document.getElementById("sucursalDestino_nombre").value = "";
+  }
+});
+
+function activarToggle(groupId, hiddenId, callback) {
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  const hidden = document.getElementById(hiddenId);
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      hidden.value = btn.dataset.value;
+      if (callback) callback(btn.dataset.value);
+    });
+  });
+}
+
+/* ══════════════════════════════════════
+   EMPRESAS
+══════════════════════════════════════ */
+document.getElementById("pais").addEventListener("change", function() {
+  const pais = this.value;
+  resetEmpresaPrincipal();
+  if (!pais) return;
+  cargarEmpresas(pais, "panelEmpresa", pais, (lista) => {
+    if (panelTS) panelTS.destroy();
+    panelTS = new TomSelect("#panelEmpresa", {
+      create: false,
+      sortField: { field: "text", direction: "asc" },
+      placeholder: "Escribe para buscar...",
+      allowEmptyOption: true
+    });
+    panelTS.on("change", (val) => onEmpresaSeleccionada(val, lista));
+  });
+});
+
+async function cargarEmpresas(pais, selectId, cacheKey, callback) {
+  if (!pais) return;
+  try {
+    if (!empresasCache[cacheKey]) {
+      const res = await fetch(`${API_URL_EMPRESAS}?pais=${encodeURIComponent(pais)}`);
+      empresasCache[cacheKey] = (await res.json()).empresas || [];
+    }
+    const lista = empresasCache[cacheKey];
+    const sel = document.getElementById(selectId);
+    sel.innerHTML = '<option value="">Selecciona empresa</option>';
+    lista.forEach(emp => {
+      const o = document.createElement("option");
+      o.value = emp.nombreEmpresa;
+      o.textContent = emp.nombreEmpresa;
+      sel.appendChild(o);
+    });
+    sel.disabled = false;
+    if (callback) callback(lista);
+  } catch(e) { showToast("Error cargando empresas. Intenta de nuevo.", "error"); }
+}
+
+function resetEmpresaPrincipal() {
+  ["rutEmpresa","razonSocial","idPanelHidden"].forEach(id => document.getElementById(id).value = "");
+  resetSelect("panelEmpresa", "Selecciona empresa");
+  resetSelect("sucursalGC", "Selecciona empresa primero");
+  resetSelect("sucursalOrigen", "Selecciona empresa primero");
+  resetSelect("sucursalDestino", "Selecciona empresa primero");
+  document.getElementById("giftCardFields").innerHTML = "";
+  updateTotalBar();
+  if (panelTS) { panelTS.destroy(); panelTS = null; }
+}
+
+function onEmpresaSeleccionada(nombre, lista) {
+  const emp = lista.find(e => e.nombreEmpresa === nombre);
+  if (!emp) return;
+  document.getElementById("rutEmpresa").value    = emp.rut || "";
+  document.getElementById("razonSocial").value   = emp.razonSocial || "";
+  document.getElementById("idPanelHidden").value = emp.idPanel ?? "";
+
+  const sucs = emp.sucursales || [];
+  // GC
+  poblarSucursales(sucs, "sucursalGC",       "sucursalGC_id",       "sucursalGC_nombre");
+  // Migración: origen siempre es la empresa principal
+  poblarSucursales(sucs, "sucursalOrigen",   "sucursalOrigen_id",   "sucursalOrigen_nombre");
+  // Migración: destino solo si es misma empresa
+  if (document.getElementById("mismaEmpresaHidden").value === "si") {
+    poblarSucursales(sucs, "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+  }
+  // Anulación
+  poblarSucursales(sucs, "sucursalAnulacion","sucursalAnulacion_id","sucursalAnulacion_nombre");
+}
+
+/* ══════════════════════════════════════
+   EMPRESA ORIGEN (otra empresa)
+══════════════════════════════════════ */
+document.getElementById("paisOrigen").addEventListener("change", function() {
+  const pais = this.value;
+  if (!pais) return;
+  resetSelect("panelOrigen", "Selecciona empresa");
+  document.getElementById("panelOrigen").disabled = true;
+  if (panelOrigenTS) { panelOrigenTS.destroy(); panelOrigenTS = null; }
+
+  cargarEmpresas(pais, "panelOrigen", "origen_" + pais, (lista) => {
+    empresasOrigen = lista;
+    panelOrigenTS = new TomSelect("#panelOrigen", {
+      create: false,
+      sortField: { field: "text", direction: "asc" },
+      placeholder: "Escribe para buscar...",
+      allowEmptyOption: true
+    });
+    panelOrigenTS.on("change", (val) => {
+      const emp = lista.find(e => e.nombreEmpresa === val);
+      if (!emp) return;
+      document.getElementById("idPanelOrigenHidden").value = emp.idPanel ?? "";
+      document.getElementById("razonOrigenInput").value    = emp.razonSocial || "";
+      // En Migración: otra empresa → poblar sucursales del DESTINO
+      poblarSucursales(emp.sucursales || [], "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+    });
+  });
+});
+
+/* ══════════════════════════════════════
+   SUCURSALES
+══════════════════════════════════════ */
+function poblarSucursales(sucursales, selectId, hiddenIdId, hiddenNombreId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona sucursal</option>';
+  sucursales.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s.idSucursal;
+    o.dataset.nombre = String(s.idSucursal) === "0" ? "Administrador" : s.nombreSucursal;
+    o.textContent = String(s.idSucursal) === "0"
+      ? `Administrador (0)`
+      : `${s.nombreSucursal} (${s.idSucursal})`;
+    sel.appendChild(o);
+  });
+  sel.onchange = function() {
+    const opt = this.options[this.selectedIndex];
+    document.getElementById(hiddenIdId).value     = this.value;
+    document.getElementById(hiddenNombreId).value = opt ? (opt.dataset.nombre || "") : "";
+  };
+}
+
+function resetSelect(id, placeholder) {
+  const sel = document.getElementById(id);
+  if (sel) sel.innerHTML = `<option value="">${placeholder}</option>`;
+}
+
+/* ══════════════════════════════════════
+   BLOQUES DE GIFT CARDS (idéntico al original)
+══════════════════════════════════════ */
+async function addGiftCardGroup() {
+  const pais = document.getElementById("pais").value;
+  if (!pais) { showToast("Selecciona el país primero", "error"); return; }
+
+  const empresa = panelTS ? panelTS.getValue() : "";
+  if (!empresa) { showToast("Selecciona la empresa primero", "error"); return; }
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "gift-card-group";
+  wrapper.innerHTML = `
+    <button type="button" class="delete-btn">🗑 Eliminar</button>
+    <label>Marca / Gift Card</label>
+    <select class="giftcard-select" required>
+      <option value="">Cargando...</option>
+    </select>
+    <label>Monto Gift Card (puntos)</label>
+    <div class="monto-container">
+      <select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>
+    </div>
+    <label>Stock disponible</label>
+    <input class="stock-input" readonly />
+    <label>Cantidad</label>
+    <input type="number" class="cantidad-input" min="1" value="1" required />
+    <div class="warning">⚠️ Esta solicitud dejará el stock en 30% o menos.</div>
+    <div class="comentario-warning hidden"></div>
+  `;
+
+  document.getElementById("giftCardFields").appendChild(wrapper);
+
+  wrapper.querySelector(".delete-btn").addEventListener("click", () => {
+    wrapper.remove();
+    updateTotalBar();
+  });
+
+  const gift     = wrapper.querySelector(".giftcard-select");
+  const montoC   = wrapper.querySelector(".monto-container");
+  const stock    = wrapper.querySelector(".stock-input");
+  const cantidad = wrapper.querySelector(".cantidad-input");
+  const warning  = wrapper.querySelector(".warning");
+
+  // 1) Cargar lista de GC desde gc-stock
+  await cargarGiftCards(gift);
+
+  // 2) Al elegir GC, cargar sus montos+stock
+  gift.addEventListener("change", async e => {
+    const gc = e.target.value;
+    stock.value = "";
+    stock.dataset.original = "";
+    warning.style.display = "none";
+    updateTotalBar();
+    if (gc) await cargarMontos(montoC, stock, warning, gc);
+    else {
+      montoC.innerHTML = `<select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>`;
+    }
+  });
+
+  cantidad.addEventListener("input", () => {
+    checkStockWarning(stock, cantidad, warning);
+    updateTotalBar();
+  });
+}
+
+async function cargarGiftCards(select) {
+  const pais = document.getElementById("pais").value;
+  if (!pais) {
+    select.innerHTML = `<option value="">Selecciona país primero</option>`;
+    return;
+  }
+  try {
+    const res = await fetch(`${API_URL_STOCK}?pais=${encodeURIComponent(pais)}`);
+    const data = await res.json();
+    select.innerHTML = `<option value="">Selecciona</option>` +
+      (data.giftCards || []).map(g => `<option value="${g}">${g}</option>`).join("");
+  } catch(e) {
+    select.innerHTML = `<option value="">Error cargando GC</option>`;
+    showToast("Error cargando gift cards", "error");
+  }
+}
+
+async function cargarMontos(container, stock, warning, giftCard) {
+  container.innerHTML = `<select class="monto-select" required></select>`;
+  const sel = container.querySelector("select");
+  const wrapper = container.closest(".gift-card-group");
+  const comentarioBox = wrapper.querySelector(".comentario-warning");
+  const cantidad = wrapper.querySelector(".cantidad-input");
+  const pais = document.getElementById("pais").value;
+
+  try {
+    const res = await fetch(`${API_URL_STOCK}?pais=${encodeURIComponent(pais)}&giftCard=${encodeURIComponent(giftCard)}`);
+    const data = await res.json();
+    sel.innerHTML = `<option value="">Selecciona monto</option>`;
+    let primerComentario = null;
+
+    (data.montos || []).forEach(m => {
+      const o = document.createElement("option");
+      o.value = String(m.monto);
+      o.dataset.stock = String(m.stock);
+      o.textContent = `${Number(m.monto).toLocaleString("es-CL")} (stock: ${m.stock})`;
+      sel.appendChild(o);
+      if (m.comentario && !primerComentario) primerComentario = m.comentario;
+    });
+
+    if (primerComentario) {
+      comentarioBox.classList.remove("hidden");
+      comentarioBox.innerHTML = `ℹ️ ${primerComentario}`;
+    } else {
+      comentarioBox.classList.add("hidden");
+      comentarioBox.innerHTML = "";
+    }
+
+    sel.addEventListener("change", e => {
+      const opt = e.target.selectedOptions[0];
+      const s = opt ? Number(opt.dataset.stock) : 0;
+      stock.value = s;
+      stock.dataset.original = s;
+      checkStockWarning(stock, cantidad, warning);
+      updateTotalBar();
+    });
+  } catch(e) { showToast("Error cargando montos", "error"); }
+}
+
+function checkStockWarning(stock, cantidad, warning) {
+  const original = Number(stock.dataset.original);
+  const cant = Number(cantidad.value);
+  if (!original || !cant) { warning.style.display = "none"; return; }
+  warning.style.display = ((original - cant) / original <= 0.3) ? "block" : "none";
+}
+
+function updateTotalBar() {
+  let total = 0;
+  document.querySelectorAll(".gift-card-group").forEach(block => {
+    const cant  = Number(block.querySelector(".cantidad-input")?.value) || 0;
+    const monto = Number(block.querySelector(".monto-select")?.value)   || 0;
+    total += monto * cant;
+  });
+  const bar = document.getElementById("totalBar");
+  bar.style.display = total > 0 ? "flex" : "none";
+  document.getElementById("gcTotalPuntos").textContent = total.toLocaleString("es-CL") + " pts";
+}
+
+/* ══════════════════════════════════════
+   VALIDACIÓN
+══════════════════════════════════════ */
+function validar() {
+  const tipo    = document.getElementById("tipoSolicitudHidden").value;
+  const pais    = document.getElementById("pais").value;
+  const empresa = panelTS ? panelTS.getValue() : "";
+  const nombre  = document.getElementById("solNombre").value.trim();
+  const email   = document.getElementById("solEmail").value.trim();
+
+  if (!pais)    { showToast("Selecciona un país.", "error"); return false; }
+  if (!empresa) { showToast("Selecciona la empresa.", "error"); return false; }
+  if (!nombre)  { showToast("Ingresa tu nombre.", "error"); return false; }
+  if (!email)   { showToast("Ingresa el correo del solicitante.", "error"); return false; }
+  const kamEmail = document.getElementById("kamEmail").value.trim();
+  if (!kamEmail) { showToast("Ingresa el correo KAM Solicitante.", "error"); return false; }
+
+  if (tipo === "solicitud_gc") {
+    if (!document.getElementById("tipoGiftCard").value) {
+      showToast("Selecciona el tipo de Gift Card.", "error"); return false;
+    }
+    if (!document.getElementById("sucursalGC").value) {
+      showToast("Selecciona la sucursal origen de puntos.", "error"); return false;
+    }
+    if (document.querySelectorAll(".gift-card-group").length === 0) {
+      showToast("Agrega al menos una Gift Card.", "error"); return false;
+    }
+  }
+
+  if (tipo === "migracion") {
+    if (!document.getElementById("sucursalOrigen").value) {
+      showToast("Selecciona la sucursal origen.", "error"); return false;
+    }
+    if (!document.getElementById("sucursalDestino").value) {
+      showToast("Selecciona la sucursal destino.", "error"); return false;
+    }
+    const pts = Number(document.getElementById("reversarPuntos").value);
+    if (!pts || pts <= 0) {
+      showToast("Ingresa el total de puntos a migrar.", "error"); return false;
+    }
+    if (!document.getElementById("reversarMotivo").value.trim()) {
+      showToast("Ingresa el motivo de la migración.", "error"); return false;
+    }
+  }
+
+  if (tipo === "anulacion") {
+    if (!document.getElementById("sucursalAnulacion").value) {
+      showToast("Selecciona la sucursal de la anulación.", "error"); return false;
+    }
+    if (!document.getElementById("anulacionOC").value.trim()) {
+      showToast("Ingresa el N° de Orden de Compra.", "error"); return false;
+    }
+    if (!document.getElementById("anulacionMotivo").value.trim()) {
+      showToast("Ingresa el motivo de la anulación.", "error"); return false;
+    }
+  }
+  return true;
+}
+
+/* ══════════════════════════════════════
+   CONSTRUIR PAYLOAD
+══════════════════════════════════════ */
+function buildPayload() {
+  const tipo      = document.getElementById("tipoSolicitudHidden").value;
+  const pais      = document.getElementById("pais").value;
+  const empresa   = panelTS ? panelTS.getValue() : "";
+  const idPanel   = document.getElementById("idPanelHidden").value;
+  const rut       = document.getElementById("rutEmpresa").value;
+  const razon     = document.getElementById("razonSocial").value;
+  const nroTicket = document.getElementById("nroTicket").value.trim();
+
+  const solicitante = {
+    nombre:   document.getElementById("solNombre").value.trim(),
+    area:     document.getElementById("solArea").value.trim(),
+    email:    document.getElementById("solEmail").value.trim(),
+    kamEmail: document.getElementById("kamEmail").value.trim(),
+    ticket:   nroTicket
+  };
+
+  const base = { tipo, pais, empresa, idPanel, rut, razonSocial: razon, solicitante };
+
+  if (tipo === "solicitud_gc") {
+    const items = [];
+    document.querySelectorAll(".gift-card-group").forEach(block => {
+      const gc      = block.querySelector(".giftcard-select")?.value || "";
+      const monto   = Number(block.querySelector(".monto-select")?.value) || 0;
+      const cantidad= Number(block.querySelector(".cantidad-input")?.value) || 0;
+      const stock   = Number(block.querySelector(".stock-input")?.value) || 0;
+      items.push({ giftCard: gc, monto, cantidad, subtotal: monto * cantidad, stockActual: stock });
+    });
+
+    return {
+      ...base,
+      tipoGiftCard:   document.getElementById("tipoGiftCard").value,
+      giftCardFisica: document.getElementById("giftCardFisica").value,
+      sucursal: {
+        id:     document.getElementById("sucursalGC_id").value,
+        nombre: document.getElementById("sucursalGC_nombre").value
+      },
+      comentarios:  document.getElementById("gcComentarios").value.trim(),
+      items,
+      totalPuntos:  items.reduce((s, i) => s + i.subtotal, 0)
+    };
+  }
+
+  if (tipo === "migracion") {
+    const mismaEmpresa   = document.getElementById("mismaEmpresaHidden").value === "si";
+    const destinoEmpresa = mismaEmpresa ? empresa : (panelOrigenTS ? panelOrigenTS.getValue() : "");
+    const destinoIdPanel = mismaEmpresa ? idPanel : document.getElementById("idPanelOrigenHidden").value;
+    const destinoRazon   = mismaEmpresa ? razon   : document.getElementById("razonOrigenInput").value;
+
+    return {
+      ...base,
+      origen: {
+        empresa, idPanel, razonSocial: razon,
+        sucursal: {
+          id:     document.getElementById("sucursalOrigen_id").value,
+          nombre: document.getElementById("sucursalOrigen_nombre").value
+        }
+      },
+      destino: {
+        mismaEmpresa,
+        empresa: destinoEmpresa,
+        idPanel: destinoIdPanel,
+        razonSocial: destinoRazon,
+        sucursal: {
+          id:     document.getElementById("sucursalDestino_id").value,
+          nombre: document.getElementById("sucursalDestino_nombre").value
+        }
+      },
+      totalPuntos: Number(document.getElementById("reversarPuntos").value) || 0,
+      motivo: document.getElementById("reversarMotivo").value.trim()
+    };
+  }
+
+  if (tipo === "anulacion") {
+    return {
+      ...base,
+      sucursal: {
+        id:     document.getElementById("sucursalAnulacion_id").value,
+        nombre: document.getElementById("sucursalAnulacion_nombre").value
+      },
+      nroOC:   document.getElementById("anulacionOC").value.trim(),
+      nroTicketAnulacion: document.getElementById("anulacionTicket").value.trim(),
+      motivo:  document.getElementById("anulacionMotivo").value.trim()
+    };
+  }
+}
+
+/* ══════════════════════════════════════
+   RESET FORMULARIO COMPLETO
+══════════════════════════════════════ */
+function resetFormulario() {
+  // Campos solicitante
+  ["solEmail","kamEmail","solNombre","solArea","nroTicket"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  // Campos empresa
+  ["rutEmpresa","razonSocial","idPanelHidden"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  // País — resetear dispara resetEmpresaPrincipal vía listener
+  document.getElementById("pais").value = "";
+
+  // Destruir y recrear TomSelect empresa principal limpio
+  if (panelTS) { try { panelTS.destroy(); } catch(e){} panelTS = null; }
+  const selEmpresa = document.getElementById("panelEmpresa");
+  selEmpresa.innerHTML = '<option value="">Selecciona empresa</option>';
+
+  // Sección GC
+  const tipoGC = document.getElementById("tipoGiftCard");
+  if (tipoGC) tipoGC.value = "";
+  const gcFisica = document.getElementById("giftCardFisica");
+  if (gcFisica) gcFisica.value = "No";
+  const gcComent = document.getElementById("gcComentarios");
+  if (gcComent) gcComent.value = "";
+  resetSelect("sucursalGC", "Selecciona empresa primero");
+  ["sucursalGC_id","sucursalGC_nombre"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+  document.getElementById("giftCardFields").innerHTML = "";
+  updateTotalBar();
+
+  // Sección Migración
+  const revPuntos = document.getElementById("reversarPuntos");
+  if (revPuntos) revPuntos.value = "";
+  const revMotivo = document.getElementById("reversarMotivo");
+  if (revMotivo) revMotivo.value = "";
+  resetSelect("sucursalOrigen",  "Selecciona empresa primero");
+  resetSelect("sucursalDestino", "Selecciona empresa primero");
+  ["sucursalOrigen_id","sucursalOrigen_nombre",
+   "sucursalDestino_id","sucursalDestino_nombre"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+
+  // Sección Anulación
+  const anulOC = document.getElementById("anulacionOC");
+  if (anulOC) anulOC.value = "";
+  const anulTicket = document.getElementById("anulacionTicket");
+  if (anulTicket) anulTicket.value = "";
+  const anulMotivo = document.getElementById("anulacionMotivo");
+  if (anulMotivo) anulMotivo.value = "";
+  resetSelect("sucursalAnulacion","Selecciona empresa primero");
+  ["sucursalAnulacion_id","sucursalAnulacion_nombre"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+
+  // Resetear toggle misma empresa
+  document.getElementById("mismaEmpresaHidden").value = "si";
+  document.getElementById("btnMismaEmpresa").classList.add("active");
+  document.getElementById("btnOtraEmpresa").classList.remove("active");
+  document.getElementById("bloqueOtraEmpresaOrigen").classList.add("hidden");
+
+  // Destruir TomSelect origen
+  if (panelOrigenTS) { try { panelOrigenTS.destroy(); } catch(e){} panelOrigenTS = null; }
+  resetSelect("panelOrigen", "Selecciona país primero");
+  document.getElementById("paisOrigen").value = "";
+  ["idPanelOrigenHidden","razonOrigenInput"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+
+  // Volver a tipo GC por defecto
+  document.getElementById("tipoSolicitudHidden").value = "solicitud_gc";
+  document.querySelectorAll(".toggle-btn[data-value]").forEach(b => {
+    b.classList.toggle("active", b.dataset.value === "solicitud_gc");
+  });
+  document.getElementById("seccion-solicitud_gc").classList.remove("hidden");
+  document.getElementById("seccion-migracion").classList.add("hidden");
+  document.getElementById("seccion-anulacion").classList.add("hidden");
+
+  // Limpiar cache para forzar recarga
+  empresasCache = {};
+}
+
+/* ══════════════════════════════════════
+   ENVIAR
+══════════════════════════════════════ */
+let enviando = false;
+
+async function enviarSolicitud() {
+  if (enviando) return;
+  if (!validar()) return;
+
+  enviando = true;
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "⏳ Enviando...";
+  btn.style.background = "#fa345e";
+
+  const desbloquear = () => {
+    btn.textContent = "📨 Enviar Solicitud";
+    btn.style.background = "";
+    btn.disabled = false;
+    enviando = false;
+  };
+
+  try {
+    const payload = buildPayload();
+    const res = await fetch(WEBHOOK_REVERSAS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      btn.textContent = "✅ Enviado";
+      btn.style.background = "#22c55e";
+      showToast("✅ Solicitud enviada. Revisa tu correo.", "success");
+      setTimeout(() => {
+        try { resetFormulario(); } catch(e) { console.warn("Reset error:", e); }
+        desbloquear();
+      }, 2500);
+    } else {
+      throw new Error("HTTP " + res.status);
+    }
+  } catch(e) {
+    showToast("❌ Error al enviar. Intenta de nuevo.", "error");
+    desbloquear();
+  }
+}
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = type;
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 5000);
+}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+// Limpiar GC si cambia país
+document.getElementById("pais").addEventListener("change", () => {
+  document.getElementById("giftCardFields").innerHTML = "";
+  updateTotalBar();
+});
+</script>
+</body>
+</html>
