@@ -240,6 +240,44 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 .total-bar span:first-child { font-size: 13px; font-weight: 600; color: #555; }
 .total-bar span:last-child  { font-size: 17px; font-weight: 700; color: #fa345e; }
 
+/* Modal popup factura vacía */
+#modal-factura {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+#modal-factura.visible { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px 28px 24px;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+}
+.modal-icon { font-size: 40px; margin-bottom: 12px; }
+.modal-title { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 8px; }
+.modal-desc  { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 22px; }
+.modal-btns  { display: flex; gap: 10px; }
+.modal-btn-cancel {
+  flex: 1; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1px solid #ccc; background: #fff; color: #555; cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+}
+.modal-btn-cancel:hover { background: #f5f5f5; }
+.modal-btn-confirm {
+  flex: 1; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: none; background: #fa345e; color: #fff; cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+}
+.modal-btn-confirm:hover { background: #d42a4e; }
+
 /* Animación envío */
 #send-overlay {
   display: none;
@@ -293,10 +331,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   margin-bottom: 5px;
 }
 .envelope-lines span:last-child { width: 60%; }
-.send-dots {
-  display: flex;
-  gap: 6px;
-}
+.send-dots { display: flex; gap: 6px; }
 .send-dots span {
   width: 8px;
   height: 8px;
@@ -399,8 +434,8 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   </div>
 </div>
 
-<label>N° de Ticket</label>
-<input id="nroTicket" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" />
+<label id="labelTicket" style="display:none;">N° de Ticket</label>
+<input id="nroTicket" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" style="display:none;" />
 
 <hr class="hr">
 
@@ -488,15 +523,12 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
       <!-- Bloque otra empresa destino -->
       <div id="bloqueOtraEmpresaOrigen" class="hidden" style="margin-top:14px;">
-        <label>País empresa destino</label>
-        <select id="paisOrigen">
-          <option value="">Selecciona</option>
-          <option>Chile</option><option>Colombia</option>
-          <option>Ecuador</option><option>Peru</option><option>Mexico</option>
-        </select>
+        <label>País empresa destino <span style="color:#888;font-size:12px;font-weight:400;">(bloqueado al país de origen)</span></label>
+        <input id="paisOrigenDisplay" readonly style="background:#f5f5f5;color:#666;" />
+        <input type="hidden" id="paisOrigen" />
         <label>Panel empresa destino</label>
         <select id="panelOrigen" disabled>
-          <option value="">Selecciona país primero</option>
+          <option value="">Cargando empresas...</option>
         </select>
         <input type="hidden" id="idPanelOrigenHidden">
         <label>Razón Social destino</label>
@@ -514,6 +546,9 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
   <label>Total de Puntos a Migrar <span style="color:#fa345e">*</span></label>
   <input id="reversarPuntos" type="number" min="1" placeholder="Ej: 330000" required />
+
+  <label>N° de Ticket (Cuenta Destino) <span style="color:#fa345e">*</span></label>
+  <input id="nroTicketMigracion" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" required />
 
   <label>Motivo de la Migración <span style="color:#fa345e">*</span></label>
   <textarea id="reversarMotivo" placeholder="Explica el motivo de la migración..."></textarea>
@@ -538,17 +573,33 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
   <div class="inline-row" style="margin-top:16px;">
     <div>
-      <label>N° de Factura <span style="color:#fa345e">*</span></label>
-      <input id="anulacionOC" placeholder="Ej: FAC-2025-001" required />
+      <label>N° de Ticket (Cuenta Anulación) <span style="color:#fa345e">*</span></label>
+      <input id="anulacionTicketCuenta" type="number" min="1" placeholder="Ej: 20250001" inputmode="numeric" required />
     </div>
     <div>
-      <label>Total de Puntos a Reversar <span style="color:#fa345e">*</span></label>
-      <input id="anulacionPuntos" type="number" min="1" placeholder="Ej: 330000" required />
+      <label>N° de Factura</label>
+      <input id="anulacionOC" placeholder="Ej: FAC-2025-001" />
     </div>
   </div>
 
-  <label>Motivo / Comentario <span style="color:#fa345e">*</span></label>
-  <textarea id="anulacionMotivo" placeholder="Explica el motivo de la anulación..."></textarea>
+  <label>Total de Puntos a Reversar <span style="color:#fa345e">*</span></label>
+  <input id="anulacionPuntos" type="number" min="1" placeholder="Ej: 330000" required />
+
+  <label>Motivo de la Anulación <span style="color:#fa345e">*</span></label>
+  <select id="anulacionMotivoSelect" required onchange="onMotivoAnulacion(this.value)">
+    <option value="">Selecciona motivo</option>
+    <option value="Error Interno">Error Interno</option>
+    <option value="Solicitud Cliente">Solicitud Cliente</option>
+    <option value="Otro">Otro</option>
+  </select>
+
+  <div id="anulacionOtroBloque" class="hidden" style="margin-top:10px;">
+    <label>Especifica el motivo</label>
+    <textarea id="anulacionMotivoOtro" placeholder="Describe el motivo..."></textarea>
+  </div>
+
+  <label id="labelComentarioAnulacion" style="margin-top:16px;">Comentario adicional <span style="font-weight:400;color:#888;">(opcional)</span></label>
+  <textarea id="anulacionMotivo" placeholder="Información adicional sobre la anulación..."></textarea>
 </div>
 
 <!-- SUBMIT -->
@@ -559,6 +610,22 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 </div><!-- /container -->
 
 <div id="toast"></div>
+
+<!-- Modal: factura vacía -->
+<div id="modal-factura">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">N° de Factura vacío</div>
+    <div class="modal-desc">
+      No ingresaste un N° de Factura.<br>
+      ¿Deseas enviar la solicitud <strong>sin este campo</strong>?
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="cerrarModalFactura()">← Volver a completar</button>
+      <button class="modal-btn-confirm" onclick="confirmarSinFactura()">Enviar sin factura</button>
+    </div>
+  </div>
+</div>
 
 <!-- Animación de envío -->
 <div id="send-overlay">
@@ -613,26 +680,6 @@ activarToggle("tipoSolicitudToggle", "tipoSolicitudHidden", (val) => {
   updateTotalBar();
 });
 
-activarToggle("mismaEmpresaToggle", "mismaEmpresaHidden", (val) => {
-  const bloqueOtra = document.getElementById("bloqueOtraEmpresaOrigen");
-  bloqueOtra.classList.toggle("hidden", val === "si");
-  if (val === "si") {
-    // Destino = misma empresa principal → poblar sus sucursales
-    const pais = document.getElementById("pais").value;
-    const lista = empresasCache[pais] || [];
-    const nombreEmpresa = panelTS ? panelTS.getValue() : "";
-    const emp = lista.find(e => e.nombreEmpresa === nombreEmpresa);
-    if (emp) {
-      poblarSucursales(emp.sucursales || [], "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
-    } else {
-      resetSelect("sucursalDestino", "Selecciona empresa primero");
-    }
-  } else {
-    resetSelect("sucursalDestino", "Selecciona empresa destino primero");
-    document.getElementById("sucursalDestino_id").value = "";
-    document.getElementById("sucursalDestino_nombre").value = "";
-  }
-});
 
 function activarToggle(groupId, hiddenId, callback) {
   const group = document.getElementById(groupId);
@@ -736,32 +783,53 @@ function onEmpresaSeleccionada(nombre, lista) {
 }
 
 /* ══════════════════════════════════════
-   EMPRESA ORIGEN (otra empresa)
+   EMPRESA DESTINO (otra empresa — mismo país bloqueado)
 ══════════════════════════════════════ */
-document.getElementById("paisOrigen").addEventListener("change", function() {
-  const pais = this.value;
-  if (!pais) return;
-  resetSelect("panelOrigen", "Selecciona empresa");
-  document.getElementById("panelOrigen").disabled = true;
-  if (panelOrigenTS) { panelOrigenTS.destroy(); panelOrigenTS = null; }
 
-  cargarEmpresas(pais, "panelOrigen", "origen_" + pais, (lista) => {
-    empresasOrigen = lista;
-    panelOrigenTS = new TomSelect("#panelOrigen", {
-      create: false,
-      sortField: { field: "text", direction: "asc" },
-      placeholder: "Escribe para buscar...",
-      allowEmptyOption: true
-    });
-    panelOrigenTS.on("change", (val) => {
-      const emp = lista.find(e => e.nombreEmpresa === val);
-      if (!emp) return;
-      document.getElementById("idPanelOrigenHidden").value = emp.idPanel ?? "";
-      document.getElementById("razonOrigenInput").value    = emp.razonSocial || "";
-      // En Migración: otra empresa → poblar sucursales del DESTINO
+// Al abrir "otra empresa destino", cargar automáticamente empresas del mismo país
+activarToggle("mismaEmpresaToggle", "mismaEmpresaHidden", (val) => {
+  const bloqueOtra = document.getElementById("bloqueOtraEmpresaOrigen");
+  bloqueOtra.classList.toggle("hidden", val === "si");
+  if (val === "si") {
+    const pais = document.getElementById("pais").value;
+    const lista = empresasCache[pais] || [];
+    const nombreEmpresa = panelTS ? panelTS.getValue() : "";
+    const emp = lista.find(e => e.nombreEmpresa === nombreEmpresa);
+    if (emp) {
       poblarSucursales(emp.sucursales || [], "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+    } else {
+      resetSelect("sucursalDestino", "Selecciona empresa primero");
+    }
+  } else {
+    // Bloquear país al mismo que el origen — cargar empresas automáticamente
+    const paisOrigen = document.getElementById("pais").value;
+    document.getElementById("paisOrigenDisplay").value = paisOrigen;
+    document.getElementById("paisOrigen").value = paisOrigen;
+    resetSelect("sucursalDestino", "Selecciona empresa destino primero");
+    ["sucursalDestino_id","sucursalDestino_nombre"].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = "";
     });
-  });
+    if (panelOrigenTS) { panelOrigenTS.destroy(); panelOrigenTS = null; }
+    if (paisOrigen) {
+      cargarEmpresas(paisOrigen, "panelOrigen", "origen_" + paisOrigen, (lista) => {
+        empresasOrigen = lista;
+        document.getElementById("panelOrigen").disabled = false;
+        panelOrigenTS = new TomSelect("#panelOrigen", {
+          create: false,
+          sortField: { field: "text", direction: "asc" },
+          placeholder: "Escribe para buscar empresa destino...",
+          allowEmptyOption: true
+        });
+        panelOrigenTS.on("change", (val) => {
+          const emp = lista.find(e => e.nombreEmpresa === val);
+          if (!emp) return;
+          document.getElementById("idPanelOrigenHidden").value = emp.idPanel ?? "";
+          document.getElementById("razonOrigenInput").value    = emp.razonSocial || "";
+          poblarSucursales(emp.sucursales || [], "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+        });
+      });
+    }
+  }
 });
 
 /* ══════════════════════════════════════
@@ -1009,6 +1077,9 @@ function validar() {
     if (!pts || pts <= 0) {
       showToast("Ingresa el total de puntos a migrar.", "error"); return false;
     }
+    if (!document.getElementById("nroTicketMigracion").value.trim()) {
+      showToast("Ingresa el N° de Ticket (Cuenta Destino).", "error"); return false;
+    }
     if (!document.getElementById("reversarMotivo").value.trim()) {
       showToast("Ingresa el motivo de la migración.", "error"); return false;
     }
@@ -1018,15 +1089,19 @@ function validar() {
     if (!document.getElementById("sucursalAnulacion").value) {
       showToast("Selecciona la sucursal de la anulación.", "error"); return false;
     }
-    if (!document.getElementById("anulacionOC").value.trim()) {
-      showToast("Ingresa el N° de Factura.", "error"); return false;
+    if (!document.getElementById("anulacionTicketCuenta").value.trim()) {
+      showToast("Ingresa el N° de Ticket (Cuenta Anulación).", "error"); return false;
     }
     const pts = Number(document.getElementById("anulacionPuntos").value);
     if (!pts || pts <= 0) {
       showToast("Ingresa el total de puntos a reversar.", "error"); return false;
     }
-    if (!document.getElementById("anulacionMotivo").value.trim()) {
-      showToast("Ingresa el motivo de la anulación.", "error"); return false;
+    if (!document.getElementById("anulacionMotivoSelect").value) {
+      showToast("Selecciona el motivo de la anulación.", "error"); return false;
+    }
+    if (document.getElementById("anulacionMotivoSelect").value === "Otro" &&
+        !document.getElementById("anulacionMotivoOtro").value.trim()) {
+      showToast("Especifica el motivo cuando seleccionas 'Otro'.", "error"); return false;
     }
   }
   return true;
@@ -1049,7 +1124,7 @@ function buildPayload() {
     area:     document.getElementById("solArea").value.trim(),
     email:    document.getElementById("solEmail").value.trim(),
     kamEmail: document.getElementById("kamEmail").value.trim(),
-    ticket:   nroTicket
+    ticket:   "" // GC no usa ticket; migracion y anulacion lo toman de sus propios campos
   };
 
   const base = { tipo, pais, empresa, idPanel, rut, razonSocial: razon, solicitante };
@@ -1092,6 +1167,7 @@ function buildPayload() {
 
     return {
       ...base,
+      solicitante: { ...base.solicitante, ticket: document.getElementById("nroTicketMigracion").value.trim() },
       origen: {
         empresa, idPanel, razonSocial: razon,
         sucursal: {
@@ -1115,15 +1191,20 @@ function buildPayload() {
   }
 
   if (tipo === "anulacion") {
+    const motiSelect = document.getElementById("anulacionMotivoSelect").value;
+    const motiOtro   = document.getElementById("anulacionMotivoOtro").value.trim();
+    const motivo     = motiSelect === "Otro" ? `Otro: ${motiOtro}` : motiSelect;
     return {
       ...base,
+      solicitante: { ...base.solicitante, ticket: document.getElementById("anulacionTicketCuenta").value.trim() },
       sucursal: {
         id:     document.getElementById("sucursalAnulacion_id").value,
         nombre: document.getElementById("sucursalAnulacion_nombre").value
       },
       nroOC:       document.getElementById("anulacionOC").value.trim(),
       totalPuntos: Number(document.getElementById("anulacionPuntos").value) || 0,
-      motivo:      document.getElementById("anulacionMotivo").value.trim()
+      motivo,
+      comentario:  document.getElementById("anulacionMotivo").value.trim()
     };
   }
 }
@@ -1185,10 +1266,30 @@ function resetFormulario() {
   if (anulPuntos) anulPuntos.value = "";
   const anulMotivo = document.getElementById("anulacionMotivo");
   if (anulMotivo) anulMotivo.value = "";
+  const anulTicketCuenta = document.getElementById("anulacionTicketCuenta");
+  if (anulTicketCuenta) anulTicketCuenta.value = "";
+  const anulMotivoSelect = document.getElementById("anulacionMotivoSelect");
+  if (anulMotivoSelect) anulMotivoSelect.value = "";
+  const anulMotivoOtro = document.getElementById("anulacionMotivoOtro");
+  if (anulMotivoOtro) anulMotivoOtro.value = "";
+  document.getElementById("anulacionOtroBloque")?.classList.add("hidden");
+  // Restaurar visibilidad del comentario adicional
+  const labelComent = document.getElementById("labelComentarioAnulacion");
+  if (labelComent) labelComent.style.display = "";
+  const fieldComent = document.getElementById("anulacionMotivo");
+  if (fieldComent) { fieldComent.style.display = ""; fieldComent.value = ""; }
+  // Limpiar display país destino
+  const paisDisplay = document.getElementById("paisOrigenDisplay");
+  if (paisDisplay) paisDisplay.value = "";
+  document.getElementById("paisOrigen").value = "";
   resetSelect("sucursalAnulacion","Selecciona empresa primero");
   ["sucursalAnulacion_id","sucursalAnulacion_nombre"].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = "";
   });
+
+  // Limpiar nroTicketMigracion
+  const ticketMig = document.getElementById("nroTicketMigracion");
+  if (ticketMig) ticketMig.value = "";
 
   // Resetear toggle misma empresa
   document.getElementById("mismaEmpresaHidden").value = "si";
@@ -1218,6 +1319,31 @@ function resetFormulario() {
 }
 
 /* ══════════════════════════════════════
+   HELPERS ANULACIÓN
+══════════════════════════════════════ */
+function onMotivoAnulacion(val) {
+  document.getElementById("anulacionOtroBloque").classList.toggle("hidden", val !== "Otro");
+  // Cuando selecciona "Otro", ocultar el comentario adicional (ya tiene el campo de especificación)
+  const comentarioLabel = document.getElementById("labelComentarioAnulacion");
+  const comentarioField = document.getElementById("anulacionMotivo");
+  if (comentarioLabel) comentarioLabel.style.display = val === "Otro" ? "none" : "";
+  if (comentarioField) comentarioField.style.display = val === "Otro" ? "none" : "";
+}
+
+let _pendingEnvio = false;
+
+function cerrarModalFactura() {
+  document.getElementById("modal-factura").classList.remove("visible");
+  _pendingEnvio = false;
+}
+
+function confirmarSinFactura() {
+  document.getElementById("modal-factura").classList.remove("visible");
+  _pendingEnvio = true;
+  _ejecutarEnvio();
+}
+
+/* ══════════════════════════════════════
    ENVIAR
 ══════════════════════════════════════ */
 let enviando = false;
@@ -1226,6 +1352,21 @@ async function enviarSolicitud() {
   if (enviando) return;
   if (!validar()) return;
 
+  // Popup si anulacion y N° Factura vacío (solo primera vez)
+  const tipo = document.getElementById("tipoSolicitudHidden").value;
+  if (tipo === "anulacion" && !_pendingEnvio) {
+    const oc = document.getElementById("anulacionOC").value.trim();
+    if (!oc) {
+      document.getElementById("modal-factura").classList.add("visible");
+      return;
+    }
+  }
+  _pendingEnvio = false;
+  _ejecutarEnvio();
+}
+
+async function _ejecutarEnvio() {
+  if (enviando) return;
   enviando = true;
   const btn = document.getElementById("submitBtn");
   const overlay = document.getElementById("send-overlay");
