@@ -240,7 +240,90 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 .total-bar span:first-child { font-size: 13px; font-weight: 600; color: #555; }
 .total-bar span:last-child  { font-size: 17px; font-weight: 700; color: #fa345e; }
 
-.submit-btn { width: 100%; padding: 15px; font-size: 16px; margin-top: 28px; transition: background 0.3s, opacity 0.2s; }
+/* Animación envío */
+#send-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.92);
+  z-index: 9998;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+#send-overlay.visible { display: flex; }
+.envelope {
+  width: 80px;
+  height: 60px;
+  position: relative;
+  animation: envioFloat 0.8s ease-in-out infinite alternate;
+}
+.envelope-body {
+  width: 80px;
+  height: 52px;
+  background: #fa345e;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 0;
+}
+.envelope-flap {
+  width: 0;
+  height: 0;
+  border-left: 40px solid transparent;
+  border-right: 40px solid transparent;
+  border-top: 28px solid #d42a4e;
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: flapOpen 0.6s ease-in-out infinite alternate;
+  transform-origin: top center;
+}
+.envelope-lines {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+}
+.envelope-lines span {
+  display: block;
+  height: 3px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 2px;
+  margin-bottom: 5px;
+}
+.envelope-lines span:last-child { width: 60%; }
+.send-dots {
+  display: flex;
+  gap: 6px;
+}
+.send-dots span {
+  width: 8px;
+  height: 8px;
+  background: #fa345e;
+  border-radius: 50%;
+  animation: dotPulse 0.6s ease-in-out infinite alternate;
+}
+.send-dots span:nth-child(2) { animation-delay: 0.2s; }
+.send-dots span:nth-child(3) { animation-delay: 0.4s; }
+.send-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fa345e;
+  font-family: 'Montserrat', sans-serif;
+}
+@keyframes envioFloat {
+  from { transform: translateY(0) rotate(-3deg); }
+  to   { transform: translateY(-10px) rotate(3deg); }
+}
+@keyframes flapOpen {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(40deg); }
+}
+@keyframes dotPulse {
+  from { transform: scale(0.6); opacity: 0.4; }
+  to   { transform: scale(1.2); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -456,7 +539,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   <div class="inline-row" style="margin-top:16px;">
     <div>
       <label>N° de Factura <span style="color:#fa345e">*</span></label>
-      <input id="anulacionOC" placeholder="Ej: 0000013" required />
+      <input id="anulacionOC" placeholder="Ej: FAC-2025-001" required />
     </div>
     <div>
       <label>Total de Puntos a Reversar <span style="color:#fa345e">*</span></label>
@@ -476,6 +559,24 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 </div><!-- /container -->
 
 <div id="toast"></div>
+
+<!-- Animación de envío -->
+<div id="send-overlay">
+  <div class="envelope">
+    <div class="envelope-flap"></div>
+    <div class="envelope-body">
+      <div class="envelope-lines">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+  <div class="send-label">Enviando solicitud...</div>
+  <div class="send-dots">
+    <span></span><span></span><span></span>
+  </div>
+</div>
 
 <script>
 /* ══════════════════════════════════════
@@ -606,16 +707,32 @@ function onEmpresaSeleccionada(nombre, lista) {
   document.getElementById("idPanelHidden").value = emp.idPanel ?? "";
 
   const sucs = emp.sucursales || [];
-  // GC
-  poblarSucursales(sucs, "sucursalGC",       "sucursalGC_id",       "sucursalGC_nombre");
-  // Migración: origen siempre es la empresa principal
-  poblarSucursales(sucs, "sucursalOrigen",   "sucursalOrigen_id",   "sucursalOrigen_nombre");
-  // Migración: destino solo si es misma empresa
-  if (document.getElementById("mismaEmpresaHidden").value === "si") {
-    poblarSucursales(sucs, "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+  const tipo = document.getElementById("tipoSolicitudHidden").value;
+
+  // Poblar SOLO las sucursales del flujo activo
+  if (tipo === "solicitud_gc") {
+    poblarSucursales(sucs, "sucursalGC", "sucursalGC_id", "sucursalGC_nombre");
+    // Limpiar las de otros flujos
+    resetSelect("sucursalOrigen",    "Selecciona empresa primero");
+    resetSelect("sucursalDestino",   "Selecciona empresa primero");
+    resetSelect("sucursalAnulacion", "Selecciona empresa primero");
+  } else if (tipo === "migracion") {
+    // Origen siempre es la empresa principal
+    poblarSucursales(sucs, "sucursalOrigen", "sucursalOrigen_id", "sucursalOrigen_nombre");
+    // Destino solo si es misma empresa
+    if (document.getElementById("mismaEmpresaHidden").value === "si") {
+      poblarSucursales(sucs, "sucursalDestino", "sucursalDestino_id", "sucursalDestino_nombre");
+    }
+    // Limpiar las de otros flujos
+    resetSelect("sucursalGC",        "Selecciona empresa primero");
+    resetSelect("sucursalAnulacion", "Selecciona empresa primero");
+  } else if (tipo === "anulacion") {
+    poblarSucursales(sucs, "sucursalAnulacion", "sucursalAnulacion_id", "sucursalAnulacion_nombre");
+    // Limpiar las de otros flujos
+    resetSelect("sucursalGC",      "Selecciona empresa primero");
+    resetSelect("sucursalOrigen",  "Selecciona empresa primero");
+    resetSelect("sucursalDestino", "Selecciona empresa primero");
   }
-  // Anulación
-  poblarSucursales(sucs, "sucursalAnulacion","sucursalAnulacion_id","sucursalAnulacion_nombre");
 }
 
 /* ══════════════════════════════════════
@@ -689,6 +806,11 @@ async function addGiftCardGroup() {
   wrapper.className = "gift-card-group";
   wrapper.innerHTML = `
     <button type="button" class="delete-btn">🗑 Eliminar</button>
+    <label>Fuente</label>
+    <select class="fuente-select" required>
+      <option value="Catálogo">Catálogo</option>
+      <option value="Proveedor">Proveedor</option>
+    </select>
     <label>Marca / Gift Card</label>
     <select class="giftcard-select" required>
       <option value="">Cargando...</option>
@@ -717,20 +839,43 @@ async function addGiftCardGroup() {
   const stock    = wrapper.querySelector(".stock-input");
   const cantidad = wrapper.querySelector(".cantidad-input");
   const warning  = wrapper.querySelector(".warning");
+  const fuente   = wrapper.querySelector(".fuente-select");
 
-  // 1) Cargar lista de GC desde gc-stock
+  // Cargar lista de GC desde gc-stock
   await cargarGiftCards(gift);
 
-  // 2) Al elegir GC, cargar sus montos+stock
+  // Al cambiar fuente: Catálogo → select de montos, Proveedor → input libre
+  fuente.addEventListener("change", async () => {
+    stock.value = "";
+    stock.dataset.original = "";
+    warning.style.display = "none";
+    if (fuente.value === "Proveedor") {
+      montoC.innerHTML = `<input type="number" class="monto-libre" placeholder="Ingresa monto libre" min="0" required />`;
+      montoC.querySelector("input").addEventListener("input", updateTotalBar);
+      // Ocultar stock cuando es proveedor
+      stock.closest("label") && (stock.previousElementSibling.style.display = "none");
+      stock.style.display = "none";
+    } else {
+      montoC.innerHTML = `<select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>`;
+      stock.style.display = "";
+      if (stock.previousElementSibling) stock.previousElementSibling.style.display = "";
+      if (gift.value) await cargarMontos(montoC, stock, warning, gift.value);
+    }
+    updateTotalBar();
+  });
+
+  // Al elegir GC, cargar sus montos+stock (solo si Catálogo)
   gift.addEventListener("change", async e => {
     const gc = e.target.value;
     stock.value = "";
     stock.dataset.original = "";
     warning.style.display = "none";
     updateTotalBar();
-    if (gc) await cargarMontos(montoC, stock, warning, gc);
-    else {
-      montoC.innerHTML = `<select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>`;
+    if (fuente.value === "Catálogo") {
+      if (gc) await cargarMontos(montoC, stock, warning, gc);
+      else {
+        montoC.innerHTML = `<select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>`;
+      }
     }
   });
 
@@ -809,8 +954,14 @@ function checkStockWarning(stock, cantidad, warning) {
 function updateTotalBar() {
   let total = 0;
   document.querySelectorAll(".gift-card-group").forEach(block => {
-    const cant  = Number(block.querySelector(".cantidad-input")?.value) || 0;
-    const monto = Number(block.querySelector(".monto-select")?.value)   || 0;
+    const cant   = Number(block.querySelector(".cantidad-input")?.value) || 0;
+    const fuente = block.querySelector(".fuente-select")?.value || "Catálogo";
+    let monto = 0;
+    if (fuente === "Proveedor") {
+      monto = Number(block.querySelector(".monto-libre")?.value) || 0;
+    } else {
+      monto = Number(block.querySelector(".monto-select")?.value) || 0;
+    }
     total += monto * cant;
   });
   const bar = document.getElementById("totalBar");
@@ -907,10 +1058,16 @@ function buildPayload() {
     const items = [];
     document.querySelectorAll(".gift-card-group").forEach(block => {
       const gc      = block.querySelector(".giftcard-select")?.value || "";
-      const monto   = Number(block.querySelector(".monto-select")?.value) || 0;
+      const fuente  = block.querySelector(".fuente-select")?.value || "Catálogo";
       const cantidad= Number(block.querySelector(".cantidad-input")?.value) || 0;
       const stock   = Number(block.querySelector(".stock-input")?.value) || 0;
-      items.push({ giftCard: gc, monto, cantidad, subtotal: monto * cantidad, stockActual: stock });
+      let monto = 0;
+      if (fuente === "Proveedor") {
+        monto = Number(block.querySelector(".monto-libre")?.value) || 0;
+      } else {
+        monto = Number(block.querySelector(".monto-select")?.value) || 0;
+      }
+      items.push({ giftCard: gc, fuente, monto, cantidad, subtotal: monto * cantidad, stockActual: stock });
     });
 
     return {
@@ -1071,14 +1228,17 @@ async function enviarSolicitud() {
 
   enviando = true;
   const btn = document.getElementById("submitBtn");
+  const overlay = document.getElementById("send-overlay");
   btn.disabled = true;
   btn.textContent = "⏳ Enviando...";
   btn.style.background = "#fa345e";
+  overlay.classList.add("visible");
 
   const desbloquear = () => {
     btn.textContent = "📨 Enviar Solicitud";
     btn.style.background = "";
     btn.disabled = false;
+    overlay.classList.remove("visible");
     enviando = false;
   };
 
@@ -1090,6 +1250,7 @@ async function enviarSolicitud() {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
+      overlay.classList.remove("visible");
       btn.textContent = "✅ Enviado";
       btn.style.background = "#22c55e";
       showToast("✅ Solicitud enviada. Revisa tu correo.", "success");
