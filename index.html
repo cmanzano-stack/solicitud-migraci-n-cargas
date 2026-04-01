@@ -962,6 +962,7 @@ function buildPayload() {
       },
       nroOC:   document.getElementById("anulacionOC").value.trim(),
       nroTicketAnulacion: document.getElementById("anulacionTicket").value.trim(),
+      totalPuntos: Number(document.getElementById("anulacionPuntos").value) || 0,
       motivo:  document.getElementById("anulacionMotivo").value.trim()
     };
   }
