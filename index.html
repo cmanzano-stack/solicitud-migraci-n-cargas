@@ -251,6 +251,16 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   justify-content: center;
 }
 #modal-factura.visible { display: flex; }
+#modal-facturacion-gc {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+#modal-facturacion-gc.visible { display: flex; }
 .modal-box {
   background: #fff;
   border-radius: 14px;
@@ -635,7 +645,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 <div id="toast"></div>
 
 <!-- Modal: factura vacía (Anulación) -->
-<div id="modal-factura">
+<div id="modal-factura" style="display:none;">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <div class="modal-title">N° de Factura vacío</div>
@@ -651,7 +661,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 </div>
 
 <!-- Modal: facturación GC vacía -->
-<div id="modal-facturacion-gc">
+<div id="modal-facturacion-gc" style="display:none;">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <div class="modal-title">Datos de facturación incompletos</div>
@@ -1402,23 +1412,23 @@ let _pendingEnvio = false;
 let _pendingEnvioGC = false;
 
 function cerrarModalFactura() {
-  document.getElementById("modal-factura").classList.remove("visible");
+  document.getElementById("modal-factura").style.display = "none";
   _pendingEnvio = false;
 }
 
 function confirmarSinFactura() {
-  document.getElementById("modal-factura").classList.remove("visible");
+  document.getElementById("modal-factura").style.display = "none";
   _pendingEnvio = true;
   _ejecutarEnvio();
 }
 
 function cerrarModalFacturacionGC() {
-  document.getElementById("modal-facturacion-gc").classList.remove("visible");
+  document.getElementById("modal-facturacion-gc").style.display = "none";
   _pendingEnvioGC = false;
 }
 
 function confirmarSinFacturacionGC() {
-  document.getElementById("modal-facturacion-gc").classList.remove("visible");
+  document.getElementById("modal-facturacion-gc").style.display = "none";
   _pendingEnvioGC = true;
   _ejecutarEnvio();
 }
@@ -1439,7 +1449,7 @@ async function enviarSolicitud() {
     const factura = document.getElementById("gcNroFactura").value.trim();
     const oc      = document.getElementById("gcNroOC").value.trim();
     if (!factura && !oc) {
-      document.getElementById("modal-facturacion-gc").classList.add("visible");
+      document.getElementById("modal-facturacion-gc").style.display = "flex";
       return;
     }
   }
@@ -1451,7 +1461,7 @@ async function enviarSolicitud() {
   if (tipo === "anulacion" && !_pendingEnvio) {
     const oc = document.getElementById("anulacionOC").value.trim();
     if (!oc) {
-      document.getElementById("modal-factura").classList.add("visible");
+      document.getElementById("modal-factura").style.display = "flex";
       return;
     }
   }
