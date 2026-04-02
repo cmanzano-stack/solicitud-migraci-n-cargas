@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Solicitud Operaciones — Apprecio</title>
+<title>Solicitud Reversa Apprecio</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
@@ -365,7 +365,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 <div class="container">
 
 <img src="https://estudios.apprecio.com/hubfs/logos/Apprecio-logo-rojo.png" class="logo" />
-<h1>Solicitud Operaciones Apprecio</h1>
+<h1>Solicitud Reversa Apprecio</h1>
 
 <!-- ══════════════════════════════════════
      TIPO DE SOLICITUD (toggle estilo original)
@@ -473,6 +473,29 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
   <label>Comentarios</label>
   <textarea id="gcComentarios" placeholder="Información adicional..."></textarea>
+
+  <hr class="hr">
+
+  <!-- Bloque facturación opcional -->
+  <div style="background:#fffbea;border:1px solid #f0c040;border-radius:10px;padding:16px 18px;margin-bottom:16px;">
+    <p style="margin:0 0 10px;font-size:12px;color:#856404;font-weight:700;">
+      ⚠️ Los siguientes campos aplican <u>solo si existe un proceso de facturación</u> asociado a las Gift Cards solicitadas. Si no aplica, puedes dejarlos vacíos.
+    </p>
+    <div class="inline-row">
+      <div>
+        <label style="margin-top:0;">N° de Factura</label>
+        <input id="gcNroFactura" placeholder="Ej: FAC-2025-001" />
+      </div>
+      <div>
+        <label style="margin-top:0;">N° de Orden de Compra</label>
+        <input id="gcNroOC" placeholder="Ej: OC-2025-001" />
+      </div>
+    </div>
+    <label style="margin-top:12px;">Adjuntar Orden de Compra</label>
+    <input type="file" id="gcAdjuntoOC" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx"
+           style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;background:#fff;cursor:pointer;" />
+    <p style="font-size:11px;color:#888;margin:4px 0 0;">Formatos aceptados: PDF, imágenes, Excel, Word. <strong>Obligatorio si ingresa N° de OC.</strong></p>
+  </div>
 
   <hr class="hr">
 
@@ -611,7 +634,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
 
 <div id="toast"></div>
 
-<!-- Modal: factura vacía -->
+<!-- Modal: factura vacía (Anulación) -->
 <div id="modal-factura">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
@@ -623,6 +646,22 @@ button:disabled { background: #ccc; cursor: not-allowed; }
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="cerrarModalFactura()">← Volver a completar</button>
       <button class="modal-btn-confirm" onclick="confirmarSinFactura()">Enviar sin factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: facturación GC vacía -->
+<div id="modal-facturacion-gc">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Datos de facturación incompletos</div>
+    <div class="modal-desc">
+      No ingresaste N° de Factura ni N° de OC.<br>
+      ¿Confirmas que <strong>no existe proceso de facturación</strong> asociado a esta solicitud?
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="cerrarModalFacturacionGC()">← Volver a completar</button>
+      <button class="modal-btn-confirm" onclick="confirmarSinFacturacionGC()">Sí, enviar sin facturación</button>
     </div>
   </div>
 </div>
@@ -1064,6 +1103,12 @@ function validar() {
     if (document.querySelectorAll(".gift-card-group").length === 0) {
       showToast("Agrega al menos una Gift Card.", "error"); return false;
     }
+    // Si ingresó OC, el adjunto es obligatorio
+    const oc = document.getElementById("gcNroOC").value.trim();
+    const adjunto = document.getElementById("gcAdjuntoOC").files.length;
+    if (oc && !adjunto) {
+      showToast("Debes adjuntar la Orden de Compra si ingresas un N° de OC.", "error"); return false;
+    }
   }
 
   if (tipo === "migracion") {
@@ -1110,7 +1155,7 @@ function validar() {
 /* ══════════════════════════════════════
    CONSTRUIR PAYLOAD
 ══════════════════════════════════════ */
-function buildPayload() {
+async function buildPayload() {
   const tipo      = document.getElementById("tipoSolicitudHidden").value;
   const pais      = document.getElementById("pais").value;
   const empresa   = panelTS ? panelTS.getValue() : "";
@@ -1145,6 +1190,20 @@ function buildPayload() {
       items.push({ giftCard: gc, fuente, monto, cantidad, subtotal: monto * cantidad, stockActual: stock });
     });
 
+    // Convertir adjunto a base64
+    const fileInput = document.getElementById("gcAdjuntoOC");
+    const file = fileInput.files[0];
+    const fileBase64 = await new Promise((resolve) => {
+      if (!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = e => resolve({
+        nombre: file.name,
+        tipo:   file.type,
+        datos:  e.target.result.split(",")[1]
+      });
+      reader.readAsDataURL(file);
+    });
+
     return {
       ...base,
       tipoGiftCard:   document.getElementById("tipoGiftCard").value,
@@ -1153,6 +1212,9 @@ function buildPayload() {
         id:     document.getElementById("sucursalGC_id").value,
         nombre: document.getElementById("sucursalGC_nombre").value
       },
+      nroFactura:   document.getElementById("gcNroFactura").value.trim(),
+      nroOC:        document.getElementById("gcNroOC").value.trim(),
+      adjuntoOC:    fileBase64,
       comentarios:  document.getElementById("gcComentarios").value.trim(),
       items,
       totalPuntos:  items.reduce((s, i) => s + i.subtotal, 0)
@@ -1240,6 +1302,12 @@ function resetFormulario() {
   if (gcFisica) gcFisica.value = "No";
   const gcComent = document.getElementById("gcComentarios");
   if (gcComent) gcComent.value = "";
+  const gcFactura = document.getElementById("gcNroFactura");
+  if (gcFactura) gcFactura.value = "";
+  const gcOC = document.getElementById("gcNroOC");
+  if (gcOC) gcOC.value = "";
+  const gcAdjunto = document.getElementById("gcAdjuntoOC");
+  if (gcAdjunto) gcAdjunto.value = "";
   resetSelect("sucursalGC", "Selecciona empresa primero");
   ["sucursalGC_id","sucursalGC_nombre"].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = "";
@@ -1331,6 +1399,7 @@ function onMotivoAnulacion(val) {
 }
 
 let _pendingEnvio = false;
+let _pendingEnvioGC = false;
 
 function cerrarModalFactura() {
   document.getElementById("modal-factura").classList.remove("visible");
@@ -1343,6 +1412,17 @@ function confirmarSinFactura() {
   _ejecutarEnvio();
 }
 
+function cerrarModalFacturacionGC() {
+  document.getElementById("modal-facturacion-gc").classList.remove("visible");
+  _pendingEnvioGC = false;
+}
+
+function confirmarSinFacturacionGC() {
+  document.getElementById("modal-facturacion-gc").classList.remove("visible");
+  _pendingEnvioGC = true;
+  _ejecutarEnvio();
+}
+
 /* ══════════════════════════════════════
    ENVIAR
 ══════════════════════════════════════ */
@@ -1352,8 +1432,22 @@ async function enviarSolicitud() {
   if (enviando) return;
   if (!validar()) return;
 
-  // Popup si anulacion y N° Factura vacío (solo primera vez)
-const tipo = document.getElementById("tipoSolicitudHidden").value;
+  const tipo = document.getElementById("tipoSolicitudHidden").value;
+
+  // Popup GC: si factura y OC están vacíos
+  if (tipo === "solicitud_gc" && !_pendingEnvioGC) {
+    const factura = document.getElementById("gcNroFactura").value.trim();
+    const oc      = document.getElementById("gcNroOC").value.trim();
+    if (!factura && !oc) {
+      document.getElementById("modal-facturacion-gc").classList.add("visible");
+      return;
+    }
+  }
+  if (tipo === "solicitud_gc" && (document.getElementById("gcNroFactura").value.trim() || document.getElementById("gcNroOC").value.trim())) {
+    _pendingEnvioGC = false;
+  }
+
+  // Popup Anulación: si N° Factura vacío
   if (tipo === "anulacion" && !_pendingEnvio) {
     const oc = document.getElementById("anulacionOC").value.trim();
     if (!oc) {
@@ -1386,7 +1480,7 @@ async function _ejecutarEnvio() {
   };
 
   try {
-    const payload = buildPayload();
+    const payload = await buildPayload();
     const res = await fetch(WEBHOOK_REVERSAS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1400,14 +1494,16 @@ async function _ejecutarEnvio() {
       setTimeout(() => {
         try { resetFormulario(); } catch(e) { console.warn("Reset error:", e); }
         _pendingEnvio = false;
+        _pendingEnvioGC = false;
         desbloquear();
       }, 2500);
     } else {
       throw new Error("HTTP " + res.status);
     }
- } catch(e) {
+  } catch(e) {
     showToast("❌ Error al enviar. Intenta de nuevo.", "error");
     _pendingEnvio = false;
+    _pendingEnvioGC = false;
     desbloquear();
   }
 }
