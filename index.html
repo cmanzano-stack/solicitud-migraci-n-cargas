@@ -1353,7 +1353,7 @@ async function enviarSolicitud() {
   if (!validar()) return;
 
   // Popup si anulacion y N° Factura vacío (solo primera vez)
-  const tipo = document.getElementById("tipoSolicitudHidden").value;
+const tipo = document.getElementById("tipoSolicitudHidden").value;
   if (tipo === "anulacion" && !_pendingEnvio) {
     const oc = document.getElementById("anulacionOC").value.trim();
     if (!oc) {
@@ -1361,7 +1361,9 @@ async function enviarSolicitud() {
       return;
     }
   }
-  _pendingEnvio = false;
+  if (tipo !== "anulacion" || document.getElementById("anulacionOC").value.trim()) {
+    _pendingEnvio = false;
+  }
   _ejecutarEnvio();
 }
 
@@ -1397,13 +1399,15 @@ async function _ejecutarEnvio() {
       showToast("✅ Solicitud enviada. Revisa tu correo.", "success");
       setTimeout(() => {
         try { resetFormulario(); } catch(e) { console.warn("Reset error:", e); }
+        _pendingEnvio = false;
         desbloquear();
       }, 2500);
     } else {
       throw new Error("HTTP " + res.status);
     }
-  } catch(e) {
+ } catch(e) {
     showToast("❌ Error al enviar. Intenta de nuevo.", "error");
+    _pendingEnvio = false;
     desbloquear();
   }
 }
