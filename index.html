@@ -591,7 +591,8 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <input type="hidden" id="sucursalGC_id">
       <input type="hidden" id="sucursalGC_nombre">
       <div id="saldoGC" class="saldo-badge"></div>
-      <textarea id="gcComentarios" placeholder="Información adicional..."></textarea>
+      <label>Comentarios <span style="color:#fa345e">*</span></label>
+      <textarea id="gcComentarios" placeholder="Información adicional..." required></textarea>
 
       <hr class="hr">
 
@@ -620,9 +621,14 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <div id="giftCardFields"></div>
       <div style="display:flex;gap:10px;margin-top:20px;">
         <button type="button" class="add-button" style="flex:1;margin-top:0;" onclick="addGiftCardGroup()">➕ Agregar Gift Card</button>
-        <button type="button" class="add-button" style="flex:1;margin-top:0;background:#6366f1;" onclick="document.getElementById('inputCargaMasiva').click()">📂 Carga Masiva Excel</button>
-        <input type="file" id="inputCargaMasiva" accept=".xlsx,.xls" style="display:none;" onchange="procesarCargaMasiva(this)" />
+        <div style="flex:1;position:relative;">
+          <button type="button" class="add-button" style="width:100%;margin-top:0;background:#6366f1;" onclick="document.getElementById('inputCargaMasiva').click()">📂 Carga Masiva Excel</button>
+          <input type="file" id="inputCargaMasiva" accept=".xlsx,.xls" style="display:none;" onchange="procesarCargaMasivaConPreview(this)" />
+        </div>
       </div>
+      <p style="font-size:11px;color:#6366f1;margin:6px 0 0;line-height:1.5;">
+        ℹ️ El campo <strong>giftCard</strong> del Excel debe coincidir <strong>exactamente</strong> con el nombre del sistema. Si no coincide, esa fila no se cargará.
+      </p>
       <div class="total-bar" id="totalBar" style="display:none;">
         <span>Total puntos a descontar:</span>
         <span id="gcTotalPuntos">0</span>
@@ -768,6 +774,26 @@ button:disabled { background: #ccc; cursor: not-allowed; }
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="cerrarModalFacturacionGC()">← Volver a completar</button>
       <button class="modal-btn-confirm" onclick="confirmarSinFacturacionGC()">Sí, enviar sin facturación</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: preview carga masiva -->
+<div id="modal-preview-carga" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;align-items:center;justify-content:center;">
+  <div class="modal-box" style="max-width:560px;width:94%;text-align:left;">
+    <div class="modal-icon" style="text-align:center;">📋</div>
+    <div class="modal-title" style="text-align:center;">Preview de carga masiva</div>
+    <div class="modal-desc" style="text-align:center;margin-bottom:12px;" id="preview-resumen"></div>
+    <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid #eee;border-radius:8px;margin-bottom:6px;">
+      <table id="preview-tabla" style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat',sans-serif;">
+        <thead id="preview-thead" style="background:#fa345e;color:#fff;position:sticky;top:0;"></thead>
+        <tbody id="preview-tbody"></tbody>
+      </table>
+    </div>
+    <div id="preview-errores" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#991b1b;font-family:'Montserrat',sans-serif;max-height:100px;overflow-y:auto;"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="cerrarPreviewCarga()">✕ Cancelar</button>
+      <button class="modal-btn-confirm" id="btnConfirmarCarga" onclick="confirmarCargaMasiva()">✅ Confirmar y cargar</button>
     </div>
   </div>
 </div>
@@ -1109,6 +1135,140 @@ async function consultarSaldo(idSucursal, pais, badgeId) {
 /* ══════════════════════════════════════
    CARGA MASIVA EXCEL
 ══════════════════════════════════════ */
+let _filasPreviewOK = [];
+let _filasPreviewErr = [];
+
+function cerrarPreviewCarga() {
+  document.getElementById("modal-preview-carga").style.display = "none";
+  document.getElementById("inputCargaMasiva").value = "";
+  _filasPreviewOK = [];
+  _filasPreviewErr = [];
+}
+
+async function confirmarCargaMasiva() {
+  document.getElementById("modal-preview-carga").style.display = "none";
+  for (const item of _filasPreviewOK) {
+    await addGiftCardGroupConDatos(item);
+  }
+  if (_filasPreviewErr.length) {
+    const desc  = document.getElementById("modal-carga-masiva-desc");
+    const lista = document.getElementById("modal-carga-masiva-lista");
+    desc.textContent = `${_filasPreviewErr.length} fila(s) no se cargaron porque el nombre giftCard no coincide con el sistema.`;
+    lista.innerHTML  = _filasPreviewErr.map(e => `<div style="margin-bottom:6px;">• ${e}</div>`).join("");
+    document.getElementById("modal-carga-masiva").style.display = "flex";
+  } else {
+    showToast(`✅ ${_filasPreviewOK.length} Gift Card(s) cargadas correctamente.`, "success");
+  }
+  _filasPreviewOK = [];
+  _filasPreviewErr = [];
+  document.getElementById("inputCargaMasiva").value = "";
+}
+
+async function procesarCargaMasivaConPreview(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const pais    = document.getElementById("pais").value;
+  const empresa = panelTS ? panelTS.getValue() : "";
+  if (!pais || !empresa) {
+    showToast("Selecciona el país y la empresa antes de cargar el Excel.", "error");
+    input.value = "";
+    return;
+  }
+
+  // Leer Excel con SheetJS
+  const buffer = await file.arrayBuffer();
+  const wb     = XLSX.read(buffer, { type: "array" });
+  const ws     = wb.Sheets[wb.SheetNames[0]];
+  const filas  = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+  if (!filas.length) {
+    showToast("El archivo está vacío o no tiene filas de datos.", "error");
+    input.value = "";
+    return;
+  }
+
+  // Obtener GC disponibles para validar
+  let gcDisponibles = [];
+  try {
+    const res  = await fetch(`${API_URL_STOCK}?pais=${encodeURIComponent(pais)}`);
+    const data = await res.json();
+    gcDisponibles = (data.giftCards || []).map(g => g.trim().toUpperCase());
+  } catch(e) {
+    showToast("No se pudo obtener la lista de Gift Cards para validar.", "error");
+    input.value = "";
+    return;
+  }
+
+  _filasPreviewOK  = [];
+  _filasPreviewErr = [];
+
+  filas.forEach((fila, idx) => {
+    const nroFila  = idx + 2;
+    const giftCard = String(fila.giftCard  || "").trim();
+    const monto    = Number(fila.monto     || 0);
+    const cantidad = Number(fila.cantidad  || 0);
+    const fuente   = String(fila.fuente    || "Catálogo").trim();
+    const fuenteNorm = fuente === "Proveedor" ? "Proveedor" : "Catálogo";
+
+    if (!giftCard) { _filasPreviewErr.push(`Fila ${nroFila}: giftCard vacío.`); return; }
+    if (!monto || monto <= 0) { _filasPreviewErr.push(`Fila ${nroFila}: monto inválido (${fila.monto}).`); return; }
+    if (!cantidad || cantidad <= 0) { _filasPreviewErr.push(`Fila ${nroFila}: cantidad inválida (${fila.cantidad}).`); return; }
+
+    if (fuenteNorm === "Catálogo" && !gcDisponibles.includes(giftCard.toUpperCase())) {
+      _filasPreviewErr.push(`Fila ${nroFila}: "${giftCard}" no existe en el sistema para ${pais}.`);
+      return;
+    }
+
+    _filasPreviewOK.push({ giftCard, monto, cantidad, fuente: fuenteNorm });
+  });
+
+  // Construir tabla de preview
+  const thead = document.getElementById("preview-thead");
+  const tbody = document.getElementById("preview-tbody");
+  const errDiv = document.getElementById("preview-errores");
+
+  thead.innerHTML = `<tr>${["Gift Card","Monto","Cantidad","Fuente","Estado"].map(h =>
+    `<th style="padding:8px 10px;text-align:left;font-weight:700;font-size:11px;">${h}</th>`).join("")}</tr>`;
+
+  const todasFilas = filas.map((fila, idx) => {
+    const nroFila  = idx + 2;
+    const giftCard = String(fila.giftCard  || "").trim();
+    const monto    = Number(fila.monto     || 0);
+    const cantidad = Number(fila.cantidad  || 0);
+    const fuente   = String(fila.fuente    || "Catálogo").trim();
+    const ok = _filasPreviewOK.some(f => f.giftCard === giftCard && f.monto === monto && f.cantidad === cantidad);
+    const bg = ok ? "#f0fff4" : "#fee2e2";
+    const estado = ok ? `<span style="color:#065f46;font-weight:700;">✅ OK</span>` : `<span style="color:#991b1b;font-weight:700;">❌ Error</span>`;
+    return `<tr style="background:${bg};border-bottom:1px solid #eee;">
+      <td style="padding:7px 10px;">${giftCard || "—"}</td>
+      <td style="padding:7px 10px;">${Number(monto).toLocaleString("es-CL")}</td>
+      <td style="padding:7px 10px;">${cantidad}</td>
+      <td style="padding:7px 10px;">${fuente || "Catálogo"}</td>
+      <td style="padding:7px 10px;">${estado}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = todasFilas.join("");
+
+  // Resumen
+  const resumen = document.getElementById("preview-resumen");
+  resumen.innerHTML = `<strong style="color:#065f46;">${_filasPreviewOK.length} filas válidas</strong>` +
+    (_filasPreviewErr.length ? ` &nbsp;·&nbsp; <strong style="color:#991b1b;">${_filasPreviewErr.length} con error</strong>` : "");
+
+  // Errores detalle
+  if (_filasPreviewErr.length) {
+    errDiv.style.display = "block";
+    errDiv.innerHTML = _filasPreviewErr.map(e => `• ${e}`).join("<br>");
+  } else {
+    errDiv.style.display = "none";
+  }
+
+  // Deshabilitar confirmar si no hay filas OK
+  document.getElementById("btnConfirmarCarga").disabled = _filasPreviewOK.length === 0;
+
+  document.getElementById("modal-preview-carga").style.display = "flex";
+}
+
 async function procesarCargaMasiva(input) {
   const file = input.files[0];
   input.value = ""; // reset para permitir subir el mismo archivo de nuevo
@@ -1479,6 +1639,7 @@ function validar() {
   if (tipo === "solicitud_gc") {
     if (!document.getElementById("tipoGiftCard").value) { showToast("Selecciona el tipo de Gift Card.", "error"); return false; }
     if (!document.getElementById("sucursalGC").value) { showToast("Selecciona la sucursal origen de puntos.", "error"); return false; }
+    if (!document.getElementById("gcComentarios").value.trim()) { showToast("El campo Comentarios es obligatorio.", "error"); return false; }
     if (document.querySelectorAll(".gift-card-group").length === 0) { showToast("Agrega al menos una Gift Card.", "error"); return false; }
     const oc = document.getElementById("gcNroOC").value.trim();
     const adjunto = document.getElementById("gcAdjuntoOC").files.length;
