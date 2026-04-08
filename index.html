@@ -842,11 +842,13 @@ function onGoogleLogin(response) {
     return;
   }
 
-  // Guardar sesión en sessionStorage (dura hasta cerrar pestaña)
-  sessionStorage.setItem("gUser", JSON.stringify({
+  // Guardar sesión en localStorage con expiración de 7 días
+  const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  localStorage.setItem("gUser", JSON.stringify({
     nombre: payload.name,
     email:  payload.email,
-    avatar: payload.picture
+    avatar: payload.picture,
+    expiry
   }));
 
   mostrarApp(payload);
@@ -856,10 +858,11 @@ function mostrarApp(user) {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app-screen").style.display   = "block";
 
-  // Rellenar barra de usuario
-  document.getElementById("user-avatar").src  = user.avatar || "";
-  document.getElementById("user-name").textContent  = user.nombre || user.name || "";
-  document.getElementById("user-email").textContent = user.email || "";
+  // Rellenar barra de usuario — picture viene de Google, avatar viene del storage
+  const foto = user.picture || user.avatar || "";
+  document.getElementById("user-avatar").src            = foto;
+  document.getElementById("user-name").textContent      = user.nombre || user.name || "";
+  document.getElementById("user-email").textContent     = user.email || "";
 
   // Pre-rellenar campo KAM con el correo de la sesión (readonly)
   const kamInput = document.getElementById("kamEmail");
@@ -869,17 +872,22 @@ function mostrarApp(user) {
 }
 
 function cerrarSesion() {
-  sessionStorage.removeItem("gUser");
+  localStorage.removeItem("gUser");
   document.getElementById("app-screen").style.display   = "none";
   document.getElementById("login-screen").style.display = "flex";
   document.getElementById("login-error").style.display  = "none";
 }
 
-// Verificar sesión activa al cargar
+// Verificar sesión activa al cargar — expira después de 7 días
 window.addEventListener("load", () => {
-  const saved = sessionStorage.getItem("gUser");
-  if (saved) {
-    mostrarApp(JSON.parse(saved));
+  const raw = localStorage.getItem("gUser");
+  if (raw) {
+    const saved = JSON.parse(raw);
+    if (saved.expiry && Date.now() < saved.expiry) {
+      mostrarApp(saved);
+    } else {
+      localStorage.removeItem("gUser"); // sesión expirada
+    }
   }
 });
 
