@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -413,6 +414,35 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   to   { transform: scale(1.2); opacity: 1; }
 }
 .submit-btn { width: 100%; padding: 15px; font-size: 16px; margin-top: 28px; transition: background 0.3s, opacity 0.2s; }
+
+/* Badge saldo de puntos */
+.saldo-badge {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+.saldo-badge.ok {
+  background: #f0fff4;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  display: block;
+}
+.saldo-badge.vacio {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  display: block;
+}
+.saldo-badge.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -560,8 +590,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       </select>
       <input type="hidden" id="sucursalGC_id">
       <input type="hidden" id="sucursalGC_nombre">
-
-      <label>Comentarios</label>
+      <div id="saldoGC" class="saldo-badge"></div>
       <textarea id="gcComentarios" placeholder="Información adicional..."></textarea>
 
       <hr class="hr">
@@ -589,7 +618,11 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <hr class="hr">
 
       <div id="giftCardFields"></div>
-      <button type="button" class="add-button" onclick="addGiftCardGroup()">➕ Agregar Gift Card</button>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button type="button" class="add-button" style="flex:1;margin-top:0;" onclick="addGiftCardGroup()">➕ Agregar Gift Card</button>
+        <button type="button" class="add-button" style="flex:1;margin-top:0;background:#6366f1;" onclick="document.getElementById('inputCargaMasiva').click()">📂 Carga Masiva Excel</button>
+        <input type="file" id="inputCargaMasiva" accept=".xlsx,.xls" style="display:none;" onchange="procesarCargaMasiva(this)" />
+      </div>
       <div class="total-bar" id="totalBar" style="display:none;">
         <span>Total puntos a descontar:</span>
         <span id="gcTotalPuntos">0</span>
@@ -607,6 +640,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
           </select>
           <input type="hidden" id="sucursalOrigen_id">
           <input type="hidden" id="sucursalOrigen_nombre">
+          <div id="saldoOrigen" class="saldo-badge"></div>
         </div>
       </div>
 
@@ -665,6 +699,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
           </select>
           <input type="hidden" id="sucursalAnulacion_id">
           <input type="hidden" id="sucursalAnulacion_nombre">
+          <div id="saldoAnulacion" class="saldo-badge"></div>
         </div>
       </div>
 
@@ -733,6 +768,19 @@ button:disabled { background: #ccc; cursor: not-allowed; }
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="cerrarModalFacturacionGC()">← Volver a completar</button>
       <button class="modal-btn-confirm" onclick="confirmarSinFacturacionGC()">Sí, enviar sin facturación</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: carga masiva errores -->
+<div id="modal-carga-masiva" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;align-items:center;justify-content:center;">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Filas no cargadas</div>
+    <div class="modal-desc" id="modal-carga-masiva-desc"></div>
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:20px;text-align:left;max-height:180px;overflow-y:auto;font-size:13px;font-family:'Montserrat',sans-serif;" id="modal-carga-masiva-lista"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-confirm" style="margin-top:0;" onclick="document.getElementById('modal-carga-masiva').style.display='none'">Entendido</button>
     </div>
   </div>
 </div>
@@ -814,6 +862,7 @@ window.addEventListener("load", () => {
 ══════════════════════════════════════ */
 const API_URL_STOCK    = "https://n8n.openip.cl/webhook/gc-stock";
 const API_URL_EMPRESAS = "https://n8n.openip.cl/webhook/empresas";
+const API_URL_SALDO    = "https://n8n.openip.cl/webhook/saldo-sucursal";
 const WEBHOOK_REVERSAS = "https://n8n.openip.cl/webhook/solicitud-reversas";
 
 let empresasCache  = {};
@@ -1000,16 +1049,274 @@ function poblarSucursales(sucursales, selectId, hiddenIdId, hiddenNombreId) {
       : `${s.nombreSucursal} (${s.idSucursal})`;
     sel.appendChild(o);
   });
+
+  // Mapa de selectId → badgeId
+  const badgeMap = {
+    "sucursalGC":       "saldoGC",
+    "sucursalOrigen":   "saldoOrigen",
+    "sucursalAnulacion":"saldoAnulacion"
+  };
+
   sel.onchange = function() {
     const opt = this.options[this.selectedIndex];
     document.getElementById(hiddenIdId).value     = this.value;
     document.getElementById(hiddenNombreId).value = opt ? (opt.dataset.nombre || "") : "";
+
+    // Consultar saldo si el select tiene badge asociado
+    const badgeId = badgeMap[selectId];
+    if (badgeId) {
+      const pais = document.getElementById("pais").value;
+      consultarSaldo(this.value, pais, badgeId);
+    }
   };
 }
 
 function resetSelect(id, placeholder) {
   const sel = document.getElementById(id);
   if (sel) sel.innerHTML = `<option value="">${placeholder}</option>`;
+}
+
+/* ══════════════════════════════════════
+   SALDO DE PUNTOS POR SUCURSAL
+══════════════════════════════════════ */
+async function consultarSaldo(idSucursal, pais, badgeId) {
+  const badge = document.getElementById(badgeId);
+  if (!badge) return;
+  if (!idSucursal) { badge.className = "saldo-badge"; badge.textContent = ""; return; }
+
+  const idEmpresa = document.getElementById("idPanelHidden").value || "";
+
+  badge.className = "saldo-badge ok";
+  badge.textContent = "Consultando saldo...";
+
+  try {
+    const res  = await fetch(`${API_URL_SALDO}?idSucursal=${encodeURIComponent(idSucursal)}&idEmpresa=${encodeURIComponent(idEmpresa)}&pais=${encodeURIComponent(pais)}`);
+    const data = await res.json();
+    if (data.encontrado && data.saldo !== null) {
+      const saldoFmt = Number(data.saldo).toLocaleString("es-CL");
+      badge.className = "saldo-badge ok";
+      badge.textContent = `💰 Saldo disponible: ${saldoFmt} pts`;
+    } else {
+      badge.className = "saldo-badge vacio";
+      badge.textContent = "⚠️ Sin información de saldo para esta sucursal";
+    }
+  } catch(e) {
+    badge.className = "saldo-badge error";
+    badge.textContent = "No se pudo consultar el saldo";
+  }
+}
+
+/* ══════════════════════════════════════
+   CARGA MASIVA EXCEL
+══════════════════════════════════════ */
+async function procesarCargaMasiva(input) {
+  const file = input.files[0];
+  input.value = ""; // reset para permitir subir el mismo archivo de nuevo
+  if (!file) return;
+
+  const pais    = document.getElementById("pais").value;
+  const empresa = panelTS ? panelTS.getValue() : "";
+  if (!pais || !empresa) {
+    showToast("Selecciona el país y la empresa antes de cargar el Excel.", "error");
+    return;
+  }
+
+  // Leer Excel con SheetJS
+  const buffer = await file.arrayBuffer();
+  const wb     = XLSX.read(buffer, { type: "array" });
+  const ws     = wb.Sheets[wb.SheetNames[0]];
+  const filas  = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+  if (!filas.length) {
+    showToast("El archivo está vacío o no tiene filas de datos.", "error");
+    return;
+  }
+
+  // Obtener lista de GC disponibles desde API para validar nombres
+  let gcDisponibles = [];
+  try {
+    const res  = await fetch(`${API_URL_STOCK}?pais=${encodeURIComponent(pais)}`);
+    const data = await res.json();
+    gcDisponibles = (data.giftCards || []).map(g => g.trim().toUpperCase());
+  } catch(e) {
+    showToast("No se pudo obtener la lista de Gift Cards para validar.", "error");
+    return;
+  }
+
+  const errores    = [];
+  const filasOK    = [];
+
+  filas.forEach((fila, idx) => {
+    const nroFila   = idx + 2; // +2 porque fila 1 es encabezado
+    const giftCard  = String(fila.giftCard  || "").trim();
+    const monto     = Number(fila.monto     || 0);
+    const cantidad  = Number(fila.cantidad  || 0);
+    const fuente    = String(fila.fuente    || "Catálogo").trim();
+
+    // Validar nombre GC solo si fuente es Catálogo
+    if (fuente === "Catálogo" || fuente === "Catalogo" || fuente === "") {
+      if (!gcDisponibles.includes(giftCard.toUpperCase())) {
+        errores.push(`Fila ${nroFila}: "${giftCard}" no coincide con ninguna Marca / Gift Card disponible para ${pais}.`);
+        return;
+      }
+    }
+
+    if (!giftCard) {
+      errores.push(`Fila ${nroFila}: el campo giftCard está vacío.`);
+      return;
+    }
+    if (!monto || monto <= 0) {
+      errores.push(`Fila ${nroFila}: monto inválido (${fila.monto}).`);
+      return;
+    }
+    if (!cantidad || cantidad <= 0) {
+      errores.push(`Fila ${nroFila}: cantidad inválida (${fila.cantidad}).`);
+      return;
+    }
+
+    filasOK.push({ giftCard, monto, cantidad, fuente: fuente || "Catálogo" });
+  });
+
+  // Agregar filas válidas al formulario
+  for (const item of filasOK) {
+    await addGiftCardGroupConDatos(item);
+  }
+
+  // Mostrar modal si hubo errores
+  if (errores.length) {
+    const desc = document.getElementById("modal-carga-masiva-desc");
+    const lista = document.getElementById("modal-carga-masiva-lista");
+    desc.textContent = `${errores.length} fila(s) no se cargaron porque el nombre del campo giftCard no coincide exactamente con la Marca / Gift Card disponible en el sistema. Las demás filas sí fueron cargadas.`;
+    lista.innerHTML  = errores.map(e => `<div style="margin-bottom:6px;">• ${e}</div>`).join("");
+    document.getElementById("modal-carga-masiva").style.display = "flex";
+  } else if (filasOK.length) {
+    showToast(`✅ ${filasOK.length} Gift Card(s) cargadas desde el Excel.`, "success");
+  }
+}
+
+// Versión de addGiftCardGroup que recibe datos precargados
+async function addGiftCardGroupConDatos(datos) {
+  const pais    = document.getElementById("pais").value;
+  const empresa = panelTS ? panelTS.getValue() : "";
+  if (!pais || !empresa) return;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "gift-card-group";
+  wrapper.innerHTML = `
+    <button type="button" class="delete-btn">🗑 Eliminar</button>
+    <label>Fuente</label>
+    <select class="fuente-select" required>
+      <option value="Catálogo" ${datos.fuente === "Catálogo" || datos.fuente === "Catalogo" ? "selected" : ""}>Catálogo</option>
+      <option value="Proveedor" ${datos.fuente === "Proveedor" ? "selected" : ""}>Proveedor</option>
+    </select>
+    <label>Marca / Gift Card</label>
+    <select class="giftcard-select" required></select>
+    <label>Monto Gift Card (puntos)</label>
+    <div class="monto-container">
+      <select class="monto-select" required><option value="">Cargando...</option></select>
+    </div>
+    <label>Stock disponible</label>
+    <input class="stock-input" readonly />
+    <label>Cantidad</label>
+    <input type="number" class="cantidad-input" min="1" value="${datos.cantidad}" required />
+    <div class="warning">⚠️ Esta solicitud dejará el stock en 30% o menos.</div>
+    <div class="comentario-warning hidden"></div>
+  `;
+
+  document.getElementById("giftCardFields").appendChild(wrapper);
+  wrapper.querySelector(".delete-btn").addEventListener("click", () => { wrapper.remove(); updateTotalBar(); });
+
+  const gift    = wrapper.querySelector(".giftcard-select");
+  const montoC  = wrapper.querySelector(".monto-container");
+  const stock   = wrapper.querySelector(".stock-input");
+  const cantidad= wrapper.querySelector(".cantidad-input");
+  const warning = wrapper.querySelector(".warning");
+  const fuente  = wrapper.querySelector(".fuente-select");
+
+  // Cargar lista GC y preseleccionar
+  await cargarGiftCards(gift);
+  // Seleccionar la GC del Excel
+  const opciones = Array.from(gift.options);
+  const match    = opciones.find(o => o.value.trim().toUpperCase() === datos.giftCard.trim().toUpperCase());
+  if (match) {
+    gift.value = match.value;
+    // Cargar montos y preseleccionar monto
+    if (fuente.value === "Catálogo") {
+      await cargarMontosYSeleccionar(montoC, stock, warning, gift.value, datos.monto, cantidad);
+    }
+  }
+
+  updateTotalBar();
+
+  // Eventos para cambios manuales posteriores
+  fuente.addEventListener("change", async () => {
+    stock.value = ""; stock.dataset.original = ""; warning.style.display = "none";
+    if (fuente.value === "Proveedor") {
+      montoC.innerHTML = `<input type="number" class="monto-libre" placeholder="Ingresa monto libre" min="0" required value="${datos.monto}" />`;
+      montoC.querySelector("input").addEventListener("input", updateTotalBar);
+      stock.style.display = "none";
+    } else {
+      montoC.innerHTML = `<select class="monto-select" required><option value="">Selecciona Gift Card primero</option></select>`;
+      stock.style.display = "";
+      if (gift.value) await cargarMontos(montoC, stock, warning, gift.value);
+    }
+    updateTotalBar();
+  });
+
+  gift.addEventListener("change", async e => {
+    stock.value = ""; stock.dataset.original = ""; warning.style.display = "none"; updateTotalBar();
+    if (fuente.value === "Catálogo" && e.target.value) {
+      await cargarMontos(montoC, stock, warning, e.target.value);
+    }
+  });
+
+  cantidad.addEventListener("input", () => { checkStockWarning(stock, cantidad, warning); updateTotalBar(); });
+}
+
+// Cargar montos y preseleccionar el monto indicado
+async function cargarMontosYSeleccionar(container, stock, warning, giftCard, montoTarget, cantidad) {
+  container.innerHTML = `<select class="monto-select" required></select>`;
+  const sel     = container.querySelector("select");
+  const wrapper = container.closest(".gift-card-group");
+  const comentarioBox = wrapper.querySelector(".comentario-warning");
+  const pais    = document.getElementById("pais").value;
+
+  try {
+    const res  = await fetch(`${API_URL_STOCK}?pais=${encodeURIComponent(pais)}&giftCard=${encodeURIComponent(giftCard)}`);
+    const data = await res.json();
+    sel.innerHTML = `<option value="">Selecciona monto</option>`;
+    let primerComentario = null;
+
+    (data.montos || []).forEach(m => {
+      const o = document.createElement("option");
+      o.value = String(m.monto);
+      o.dataset.stock = String(m.stock);
+      o.textContent = `${Number(m.monto).toLocaleString("es-CL")} (stock: ${m.stock})`;
+      sel.appendChild(o);
+      if (m.comentario && !primerComentario) primerComentario = m.comentario;
+    });
+
+    if (primerComentario) { comentarioBox.classList.remove("hidden"); comentarioBox.innerHTML = `ℹ️ ${primerComentario}`; }
+    else { comentarioBox.classList.add("hidden"); }
+
+    // Preseleccionar el monto del Excel
+    const matchMonto = Array.from(sel.options).find(o => Number(o.value) === Number(montoTarget));
+    if (matchMonto) {
+      sel.value = matchMonto.value;
+      const s = Number(matchMonto.dataset.stock) || 0;
+      stock.value = s; stock.dataset.original = s;
+      checkStockWarning(stock, cantidad, warning);
+    }
+
+    sel.addEventListener("change", e => {
+      const opt = e.target.selectedOptions[0];
+      const s = opt ? Number(opt.dataset.stock) : 0;
+      stock.value = s; stock.dataset.original = s;
+      checkStockWarning(stock, cantidad, warning); updateTotalBar();
+    });
+
+    updateTotalBar();
+  } catch(e) { showToast("Error cargando montos", "error"); }
 }
 
 /* ══════════════════════════════════════
@@ -1311,6 +1618,10 @@ function resetFormulario() {
   const gcAdjunto = document.getElementById("gcAdjuntoOC"); if (gcAdjunto) gcAdjunto.value = "";
   resetSelect("sucursalGC", "Selecciona empresa primero");
   ["sucursalGC_id","sucursalGC_nombre"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  ["saldoGC","saldoOrigen","saldoAnulacion"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.className = "saldo-badge"; el.textContent = ""; }
+  });
   document.getElementById("giftCardFields").innerHTML = "";
   updateTotalBar();
 
