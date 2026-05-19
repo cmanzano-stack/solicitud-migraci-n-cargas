@@ -443,6 +443,20 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   color: #991b1b;
   display: block;
 }
+
+/* ── IMAGEN DE RESPALDO ── */
+.imagen-respaldo-box {
+  background: #fff8f0;
+  border: 2px dashed #fa345e;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 20px;
+}
+.imagen-respaldo-box label {
+  margin-top: 0;
+  color: #fa345e;
+}
+
 </style>
 </head>
 <body>
@@ -593,6 +607,24 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <div id="saldoGC" class="saldo-badge"></div>
       <label>Comentarios <span style="color:#fa345e">*</span></label>
       <textarea id="gcComentarios" placeholder="Información adicional..." required></textarea>
+
+      <!-- ══ NUEVO: IMAGEN DE RESPALDO ══ -->
+      <div class="imagen-respaldo-box">
+        <label>📎 Imagen de Respaldo de la Solicitud <span style="color:#fa345e">*</span></label>
+        <p style="font-size:12px;color:#666;margin:0 0 10px;">
+          Adjunta la imagen donde el cliente realizó la solicitud. <strong>Obligatorio · Solo JPG/JPEG.</strong>
+        </p>
+        <input
+          type="file"
+          id="gcImagenRespaldo"
+          accept=".jpg,.jpeg"
+          style="width:100%;padding:8px;border:1px solid #fca5a5;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;background:#fff;cursor:pointer;"
+          onchange="previsualizarImagenRespaldo(this)"
+          required
+        />
+        <div id="gcImagenRespaldoBadge" style="display:none;margin-top:8px;padding:10px 14px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;color:#065f46;"></div>
+      </div>
+      <!-- ══ FIN NUEVO ══ -->
 
       <hr class="hr">
 
@@ -909,6 +941,34 @@ let empresasCache  = {};
 let panelTS        = null;
 let panelOrigenTS  = null;
 let empresasOrigen = [];
+
+/* ══════════════════════════════════════
+   IMAGEN DE RESPALDO — PREVIEW
+══════════════════════════════════════ */
+function previsualizarImagenRespaldo(input) {
+  const badge = document.getElementById("gcImagenRespaldoBadge");
+  if (input.files && input.files[0]) {
+    const archivo = input.files[0];
+    const ext = archivo.name.split(".").pop().toLowerCase();
+    if (ext !== "jpg" && ext !== "jpeg") {
+      badge.style.display = "block";
+      badge.style.background = "#fee2e2";
+      badge.style.borderColor = "#fca5a5";
+      badge.style.color = "#991b1b";
+      badge.textContent = "❌ Solo se aceptan archivos JPG/JPEG.";
+      input.value = "";
+      return;
+    }
+    badge.style.display = "block";
+    badge.style.background = "#d1fae5";
+    badge.style.borderColor = "#6ee7b7";
+    badge.style.color = "#065f46";
+    badge.textContent = "✅ Imagen cargada: " + archivo.name;
+  } else {
+    badge.style.display = "none";
+    badge.textContent = "";
+  }
+}
 
 /* ══════════════════════════════════════
    TOGGLE TIPO SOLICITUD
@@ -1654,6 +1714,22 @@ function validar() {
     if (!document.getElementById("tipoGiftCard").value) { showToast("Selecciona el tipo de Gift Card.", "error"); return false; }
     if (!document.getElementById("sucursalGC").value) { showToast("Selecciona la sucursal origen de puntos.", "error"); return false; }
     if (!document.getElementById("gcComentarios").value.trim()) { showToast("El campo Comentarios es obligatorio.", "error"); return false; }
+
+    // ── VALIDACIÓN IMAGEN DE RESPALDO (NUEVO) ──
+    const imgRespaldo = document.getElementById("gcImagenRespaldo");
+    if (!imgRespaldo.files || imgRespaldo.files.length === 0) {
+      showToast("Debes adjuntar la imagen de respaldo de la solicitud (JPG/JPEG).", "error");
+      imgRespaldo.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+    const imgFile = imgRespaldo.files[0];
+    const ext = imgFile.name.split(".").pop().toLowerCase();
+    if (ext !== "jpg" && ext !== "jpeg") {
+      showToast("La imagen de respaldo debe ser formato JPG o JPEG.", "error");
+      return false;
+    }
+    // ── FIN VALIDACIÓN ──
+
     if (document.querySelectorAll(".gift-card-group").length === 0) { showToast("Agrega al menos una Gift Card.", "error"); return false; }
     const oc = document.getElementById("gcNroOC").value.trim();
     const adjunto = document.getElementById("gcAdjuntoOC").files.length;
@@ -1717,6 +1793,7 @@ async function buildPayload() {
       items.push({ giftCard: gc, fuente, monto, cantidad, subtotal: monto * cantidad, stockActual: stock });
     });
 
+    // Adjunto OC
     const fileInput = document.getElementById("gcAdjuntoOC");
     const file = fileInput.files[0];
     const fileBase64 = await new Promise((resolve) => {
@@ -1726,17 +1803,29 @@ async function buildPayload() {
       reader.readAsDataURL(file);
     });
 
+    // ── IMAGEN DE RESPALDO (NUEVO) ──
+    const imgInput = document.getElementById("gcImagenRespaldo");
+    const imgFile  = imgInput.files[0];
+    const imagenRespaldoBase64 = await new Promise((resolve) => {
+      if (!imgFile) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = e => resolve({ nombre: imgFile.name, tipo: imgFile.type, datos: e.target.result.split(",")[1] });
+      reader.readAsDataURL(imgFile);
+    });
+    // ── FIN IMAGEN ──
+
     return {
       ...base,
-      tipoGiftCard:   document.getElementById("tipoGiftCard").value,
-      giftCardFisica: document.getElementById("giftCardFisica").value,
-      sucursal: { id: document.getElementById("sucursalGC_id").value, nombre: document.getElementById("sucursalGC_nombre").value },
-      nroFactura:  document.getElementById("gcNroFactura").value.trim(),
-      nroOC:       document.getElementById("gcNroOC").value.trim(),
-      adjuntoOC:   fileBase64,
-      comentarios: document.getElementById("gcComentarios").value.trim(),
+      tipoGiftCard:      document.getElementById("tipoGiftCard").value,
+      giftCardFisica:    document.getElementById("giftCardFisica").value,
+      sucursal:          { id: document.getElementById("sucursalGC_id").value, nombre: document.getElementById("sucursalGC_nombre").value },
+      nroFactura:        document.getElementById("gcNroFactura").value.trim(),
+      nroOC:             document.getElementById("gcNroOC").value.trim(),
+      adjuntoOC:         fileBase64,
+      imagenRespaldo:    imagenRespaldoBase64,   // ← NUEVO
+      comentarios:       document.getElementById("gcComentarios").value.trim(),
       items,
-      totalPuntos: items.reduce((s, i) => s + i.subtotal, 0)
+      totalPuntos:       items.reduce((s, i) => s + i.subtotal, 0)
     };
   }
 
@@ -1791,6 +1880,14 @@ function resetFormulario() {
   const gcFactura = document.getElementById("gcNroFactura"); if (gcFactura) gcFactura.value = "";
   const gcOC = document.getElementById("gcNroOC"); if (gcOC) gcOC.value = "";
   const gcAdjunto = document.getElementById("gcAdjuntoOC"); if (gcAdjunto) gcAdjunto.value = "";
+
+  // ── RESET IMAGEN RESPALDO ──
+  const gcImgRespaldo = document.getElementById("gcImagenRespaldo");
+  if (gcImgRespaldo) gcImgRespaldo.value = "";
+  const gcImgBadge = document.getElementById("gcImagenRespaldoBadge");
+  if (gcImgBadge) { gcImgBadge.style.display = "none"; gcImgBadge.textContent = ""; }
+  // ── FIN RESET ──
+
   resetSelect("sucursalGC", "Selecciona empresa primero");
   ["sucursalGC_id","sucursalGC_nombre"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
   ["saldoGC","saldoOrigen","saldoAnulacion"].forEach(id => {
