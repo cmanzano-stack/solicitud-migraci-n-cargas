@@ -612,12 +612,12 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <div class="imagen-respaldo-box">
         <label>📎 Imagen de Respaldo de la Solicitud <span style="color:#fa345e">*</span></label>
         <p style="font-size:12px;color:#666;margin:0 0 10px;">
-          Adjunta la imagen donde el cliente realizó la solicitud. <strong>Obligatorio · Solo JPG/JPEG.</strong>
+          Adjunta la imagen donde el cliente realizó la solicitud. <strong>Obligatorio · Solo JPG/JPEG/PNG.</strong>
         </p>
         <input
           type="file"
           id="gcImagenRespaldo"
-          accept=".jpg,.jpeg"
+          accept=".jpg,.jpeg,.png"
           style="width:100%;padding:8px;border:1px solid #fca5a5;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;background:#fff;cursor:pointer;"
           onchange="previsualizarImagenRespaldo(this)"
           required
@@ -950,12 +950,12 @@ function previsualizarImagenRespaldo(input) {
   if (input.files && input.files[0]) {
     const archivo = input.files[0];
     const ext = archivo.name.split(".").pop().toLowerCase();
-    if (ext !== "jpg" && ext !== "jpeg") {
+    if (ext !== "jpg" && ext !== "jpeg" && ext !== "png") {
       badge.style.display = "block";
       badge.style.background = "#fee2e2";
       badge.style.borderColor = "#fca5a5";
       badge.style.color = "#991b1b";
-      badge.textContent = "❌ Solo se aceptan archivos JPG/JPEG.";
+      badge.textContent = "❌ Solo se aceptan archivos JPG, JPEG o PNG.";
       input.value = "";
       return;
     }
@@ -1724,8 +1724,8 @@ function validar() {
     }
     const imgFile = imgRespaldo.files[0];
     const ext = imgFile.name.split(".").pop().toLowerCase();
-    if (ext !== "jpg" && ext !== "jpeg") {
-      showToast("La imagen de respaldo debe ser formato JPG o JPEG.", "error");
+    if (ext !== "jpg" && ext !== "jpeg" && ext !== "png") {
+      showToast("La imagen de respaldo debe ser formato JPG o JPEG o PNG.", "error");
       return false;
     }
     // ── FIN VALIDACIÓN ──
