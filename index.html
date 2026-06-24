@@ -573,10 +573,18 @@ button:disabled { background: #ccc; cursor: not-allowed; }
     </select>
     <input type="hidden" id="idPanelHidden">
 <div class="help-link-box">
-  <span>¿No aparece la empresa o sucursal?
-    <span style="display:inline-block;background:#f0f0f0;color:#555;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:6px;cursor:default;"
-          title="Usa este enlace solo si el selector Panel/Empresa presenta fallas. Es una salida momentánea y no reemplaza el flujo normal de solicitudes.">
-      ℹ️ Leer antes de usar
+  <span style="display:flex;align-items:center;gap:6px;">
+    ¿No aparece la empresa o sucursal?
+    <span style="position:relative;display:inline-flex;align-items:center;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#fa345e;color:#fff;font-size:10px;font-weight:700;border-radius:50%;cursor:default;flex-shrink:0;"
+            onmouseenter="document.getElementById('tooltip-panel').style.opacity='1';document.getElementById('tooltip-panel').style.pointerEvents='all';"
+            onmouseleave="document.getElementById('tooltip-panel').style.opacity='0';document.getElementById('tooltip-panel').style.pointerEvents='none';">
+        i
+      </span>
+      <div id="tooltip-panel" style="opacity:0;pointer-events:none;transition:opacity 0.2s;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:500;line-height:1.5;padding:9px 12px;border-radius:8px;width:260px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+        ⚠️ Usa este enlace <strong style="color:#ff8fa3;">solo si el selector Panel/Empresa presenta fallas</strong>. Es una salida momentánea y no reemplaza el flujo normal de solicitudes.
+        <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:10px;height:10px;background:#333;clip-path:polygon(0 0,100% 0,50% 100%);"></div>
+      </div>
     </span>
   </span>
   <a href="https://n8n.openip.cl/form/nuevas" target="_blank" rel="noopener">Agregar nueva empresa / sucursal →</a>
